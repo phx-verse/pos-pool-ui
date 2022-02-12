@@ -4,12 +4,12 @@ const ONE_VOTE_CFX = 1000;
 const poolAddress = '0x8e38f187da01d54936142a5f209d05c7e85fadff';
 
 const confluxClient = new TreeGraph.Conflux({
-  url: 'http://net8888cfx.confluxrpc.com',
+  url: 'https://net8888cfx.confluxrpc.com',
   networkId: 8888
 });
 
 const appClient = new TreeGraph.Conflux({
-  url: 'http://net8888cfx.confluxrpc.com',
+  url: 'https://net8888cfx.confluxrpc.com',
   networkId: 8888
 });
 
