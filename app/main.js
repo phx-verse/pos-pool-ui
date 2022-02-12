@@ -169,6 +169,9 @@ const PoSPool = {
       this.poolInfo.totalLocked = BigInt(poolSummary[0].toString()) * BigInt(ONE_VOTE_CFX);
       this.poolInfo.totalRevenue = trimPoints(TreeGraph.Drip(poolSummary[2].toString()).toCFX());
       this.poolInfo.apy = Number(await this.poolContract.poolAPY()) / 100;
+
+      const stakerNumber = await this.poolContract.stakerNumber();
+      console.log('StakerCount: ', stakerNumber.toString());
     },
 
     async loadLastRewardInfo() {
