@@ -110,7 +110,7 @@ const PoSPool = {
       this.userInfo.unlocked = BigInt(userSummary[3].toString());
       // this.userInfo.userInterest = TreeGraph.Drip(userSummary[5].toString()).toCFX();
       const userInterest = await poolContract.userInterest(this.userInfo.account);
-      this.userInfo.userInterest = TreeGraph.Drip(userInterest.toString()).toCFX();
+      this.userInfo.userInterest = trimPoints(TreeGraph.Drip(userInterest.toString()).toCFX());
 
       const balance = await confluxClient.cfx.getBalance(this.userInfo.account);
       this.userInfo.balance = trimPoints(TreeGraph.Drip(balance).toCFX());
