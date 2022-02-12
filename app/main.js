@@ -1,3 +1,25 @@
+let currentChainId = TESTNET_NET_ID;
+
+let confluxClient = new TreeGraph.Conflux({
+  url: TESTNET_URL,
+  networkId: TESTNET_NET_ID
+});
+// use wallet provider
+if (conflux) {
+  confluxClient.provider = conflux;
+}
+// used for send pos RPC methods
+let appClient = new TreeGraph.Conflux({
+  url: TESTNET_URL,
+  networkId: TESTNET_NET_ID
+});
+
+let poolAddress = TESTNET_POOL_ADDRESS;
+
+// TODO listen for network change event
+// if (conflux) {
+//   confluxClient.provider = conflux;
+// }
 
 const PoSPool = {
   data() {
@@ -29,9 +51,32 @@ const PoSPool = {
   },
 
   async created() {
+    const status = await this.loadChainInfo();
+
+    if (status.chainId !=  currentChainId) {
+      if (status.chainId === NET8888_NET_ID) {
+        poolAddress = NET8888_POOL_ADDRESS;
+        confluxClient = new TreeGraph.Conflux({
+          url: NET8888_URL,
+          networkId: NET8888_NET_ID
+        });
+        confluxClient.provider = conflux;
+        appClient = new TreeGraph.Conflux({
+          url: NET8888_URL,
+          networkId: NET8888_NET_ID
+        });
+      }
+    }
+    
+    const poolContract = confluxClient.Contract({
+      abi: PoSPoolABI,
+      address: poolAddress,
+    });
+    this.poolContract = poolContract;
+    
+    // load pool info
     await this.loadPoolInfo();
     await this.loadLastRewardInfo();
-    await this.loadChainInfo();
   },
 
   mounted () {
@@ -72,6 +117,7 @@ const PoSPool = {
     async loadChainInfo() {
       const status = await confluxClient.cfx.getStatus();
       this.chainStatus = status;
+      return status;
     },
 
     async connectWallet() {
@@ -104,12 +150,12 @@ const PoSPool = {
     },
 
     async loadUserInfo() {
-      const userSummary = await poolContract.userSummary(this.userInfo.account);
+      const userSummary = await this.poolContract.userSummary(this.userInfo.account);
       this.userInfo.userStaked = BigInt(userSummary[0].toString());
       this.userInfo.locked = BigInt(userSummary[2].toString());
       this.userInfo.unlocked = BigInt(userSummary[3].toString());
       // this.userInfo.userInterest = TreeGraph.Drip(userSummary[5].toString()).toCFX();
-      const userInterest = await poolContract.userInterest(this.userInfo.account);
+      const userInterest = await this.poolContract.userInterest(this.userInfo.account);
       this.userInfo.userInterest = trimPoints(TreeGraph.Drip(userInterest.toString()).toCFX());
 
       const balance = await confluxClient.cfx.getBalance(this.userInfo.account);
@@ -117,12 +163,12 @@ const PoSPool = {
     },
 
     async loadPoolInfo() {
-      this.poolInfo.name = await poolContract.poolName();
-      this.poolInfo.userShareRatio = await poolContract.poolUserShareRatio();
-      const poolSummary = await poolContract.poolSummary();
+      this.poolInfo.name = await this.poolContract.poolName();
+      this.poolInfo.userShareRatio = await this.poolContract.poolUserShareRatio();
+      const poolSummary = await this.poolContract.poolSummary();
       this.poolInfo.totalLocked = BigInt(poolSummary[0].toString()) * BigInt(ONE_VOTE_CFX);
       this.poolInfo.totalRevenue = trimPoints(TreeGraph.Drip(poolSummary[2].toString()).toCFX());
-      this.poolInfo.apy = Number(await poolContract.poolAPY()) / 100;
+      this.poolInfo.apy = Number(await this.poolContract.poolAPY()) / 100;
     },
 
     async loadLastRewardInfo() {
@@ -136,12 +182,12 @@ const PoSPool = {
     },
 
     async loadLockingList() {
-      let list = await poolContract.userInQueue(this.userInfo.account);
+      let list = await this.poolContract.userInQueue(this.userInfo.account);
       this.userInfo.userInQueue = list.map(this.mapQueueItem);
     },
 
     async loadUnlockingList() {
-      let list = await poolContract.userOutQueue(this.userInfo.account);
+      let list = await this.poolContract.userOutQueue(this.userInfo.account);
       this.userInfo.userOutOueue = list.map(this.mapQueueItem);
     },
 
@@ -150,7 +196,7 @@ const PoSPool = {
         alert('Stake count should be multiple of 1000');
         return;
       }
-      let receipt = await poolContract
+      let receipt = await this.poolContract
         .increaseStake(this.stakeCount / ONE_VOTE_CFX)
         .sendTransaction({
           from: this.userInfo.account,
@@ -159,6 +205,7 @@ const PoSPool = {
         .executed();
       if (receipt.outcomeStatus === 0) {
         this.loadUserInfo();
+        this.loadLockingList();
         this.stakeCount = 0;  // clear stake count
         alert('Stake success');
       } else {
@@ -171,7 +218,7 @@ const PoSPool = {
         alert('No claimable interest');
         return;
       }
-      let receipt = await poolContract
+      let receipt = await this.poolContract
         .claimAllInterest()
         .sendTransaction({
           from: this.userInfo.account,
@@ -196,7 +243,7 @@ const PoSPool = {
         return;
       }
       const unstakeVotePower = this.unstakeCount / ONE_VOTE_CFX;
-      let receipt = await poolContract
+      let receipt = await this.poolContract
         .decreaseStake(unstakeVotePower)
         .sendTransaction({
           from: this.userInfo.account,
@@ -205,6 +252,7 @@ const PoSPool = {
 
       if (receipt.outcomeStatus === 0) {
         this.loadUserInfo();
+        this.loadUnlockingList();
         this.unstakeCount = 0;  // clear unstake count
         alert('UnStake success');
       } else {
@@ -217,7 +265,7 @@ const PoSPool = {
         alert('No withdrawable funds');
         return;
       }
-      let receipt = await poolContract
+      let receipt = await this.poolContract
         .withdrawStake(this.userInfo.unlocked.toString())
         .sendTransaction({
           from: this.userInfo.account,
