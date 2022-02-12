@@ -5,8 +5,8 @@ let confluxClient = new TreeGraph.Conflux({
   networkId: TESTNET_NET_ID
 });
 // use wallet provider
-if (conflux) {
-  confluxClient.provider = conflux;
+if (window.conflux) {
+  confluxClient.provider = window.conflux;
 }
 // used for send pos RPC methods
 let appClient = new TreeGraph.Conflux({
@@ -60,7 +60,7 @@ const PoSPool = {
           url: NET8888_URL,
           networkId: NET8888_NET_ID
         });
-        confluxClient.provider = conflux;
+        confluxClient.provider = window.conflux;
         appClient = new TreeGraph.Conflux({
           url: NET8888_URL,
           networkId: NET8888_NET_ID
@@ -121,7 +121,7 @@ const PoSPool = {
     },
 
     async connectWallet() {
-      if (!conflux) {
+      if (!window.conflux) {
         alert('Please install Conflux Wallet');
         return;
       }
