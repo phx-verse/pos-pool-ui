@@ -22,6 +22,10 @@
       .b-shadow {
         box-shadow: rgb(0 0 0 / 5%) 0px 6px 10px;
       }
+
+      .table>:not(:first-child) {
+        border-top: 2px solid #dee2e6;
+      }
     </style>
   </head>
   <body class="bg-light">
@@ -30,9 +34,12 @@
       <div class="row justify-content-end mt-3">
         <div class="col-3">
           <button v-if="!userInfo.connected" class="btn btn-primary" v-on:click="connectWallet">Connect Wallet</button>
-          <button v-else type="button" class="btn btn-outline-primary">
-            {{shortenAccount}}
-          </button>
+          <div v-else>
+            <button type="button" class="btn btn-outline-primary">
+              {{shortenAccount}}
+            </button>
+            <!-- &nbsp;<span>{{userInfo.balance}} CFX</span> -->
+          </div>
         </div>
       </div>
 
@@ -96,6 +103,7 @@
               <button class="btn btn-primary" v-on:click="stake" :disabled="!userInfo.connected">Stake</button>
             </div>
           </div>
+          <p class="intro-title" v-if="userInfo.connected">Balance: {{userInfo.balance}} CFX</p>
         </div>
 
         <div class="col-3">
@@ -104,7 +112,7 @@
             <span class="intro-title">My Rewards (CFX)</span>
           </div>
           <button class="btn btn-primary mt-2" v-on:click="claim" :disabled="!userInfo.connected">Claim</button>
-          <p class="intro-title" v-if="poolInfo.lastRewardTime > 0">Last Update: {{lastRewardTime}}</p>
+          <p class="intro-title" v-if="userInfo.connected && poolInfo.lastRewardTime > 0">Last Update: {{lastRewardTime}}</p>
         </div>
 
         <div class="col-3">
@@ -131,6 +139,43 @@
         </div>
       </div>
 
+      <div class="row mt-4 border b-shadow rounded-3 p-4" v-if="userInfo.connected">
+        <div class="col-6">
+          <table class="table table-striped table-bordered caption-top">
+            <caption>Locking votes</caption>
+            <thead>
+              <tr>
+                <th scope="col">Amount (CFX)</th>
+                <th scope="col">EndTime</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in userInfo.userInQueue">
+                <th scope="row">{{item.amount}}</th>
+                <td>{{item.endTime}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="col-6">
+          <table class="table table-striped table-bordered caption-top">
+            <caption>Unlocking votes</caption>
+            <thead>
+              <tr>
+                <th scope="col">Amount (CFX)</th>
+                <th scope="col">EndTime</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in userInfo.userOutOueue">
+                <th scope="row">{{item.amount}}</th>
+                <td>{{item.endTime}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <div class="mt-4">
         <h4>Stake Rules</h4>
       </div>
@@ -146,10 +191,11 @@
 
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
     <script src="https://unpkg.com/vue@next"></script>
     <script src="https://cdn.jsdelivr.net/npm/js-conflux-sdk/dist/js-conflux-sdk.umd.min.js"></script>
-    <script src="app/PoSPoolContract.js"></script>
-    <script src="app/main.js"></script>
+    <script src="/app/PoolABI.js"></script>
+    <script src="/app/PoSPoolContract.js"></script>
+    <script src="/app/main.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
   </body>
 </html>

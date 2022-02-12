@@ -2,8 +2,9 @@
 const PoSPool = {
   data() {
     return {
+      chainStatus: {},
       poolInfo: {
-        status: 'Good',
+        status: 'Good', // TODO load the real pool status
         name: '',
         totalLocked: 0,
         totalRevenue: 0,
@@ -12,12 +13,15 @@ const PoSPool = {
         lastRewardTime: 0,
       },
       userInfo: {
+        balance: 0,
         connected: false,
         userStaked: BigInt(0),
         userInterest: 0,
         account: '',
         locked: BigInt(0),
         unlocked: BigInt(0),
+        userInQueue: [],
+        userOutOueue: [],
       },
       stakeCount: 0,
       unstakeCount: 0,
@@ -27,6 +31,7 @@ const PoSPool = {
   async created() {
     await this.loadPoolInfo();
     await this.loadLastRewardInfo();
+    await this.loadChainInfo();
   },
 
   mounted () {
@@ -58,11 +63,17 @@ const PoSPool = {
 
     lastRewardTime() {
       const lastTime = new Date(this.poolInfo.lastRewardTime * 1000);
-      return `${lastTime.getFullYear()}-${lastTime.getMonth() + 1}-${lastTime.getDate()} ${lastTime.getHours()}:${lastTime.getMinutes()}:00`;
+      return formatDateTime(lastTime);
     }
   },
 
   methods: {
+
+    async loadChainInfo() {
+      const status = await confluxClient.cfx.getStatus();
+      this.chainStatus = status;
+    },
+
     async connectWallet() {
       if (!conflux) {
         alert('Please install Conflux Wallet');
@@ -74,8 +85,21 @@ const PoSPool = {
         this.userInfo.account = account;
         this.userInfo.connected = true;
         this.loadUserInfo();
+        await this.loadLockingList();
+        await this.loadUnlockingList();
       } else {
         console.log('Request account failed');
+      }
+    },
+
+    mapQueueItem(item) {
+      let now = new Date().getTime();
+      // TODO chainStatus must have here
+      let unlockBlockNumber = Number(item[1].toString()) - this.chainStatus.blockNumber;
+      let unlockTime = new Date(now + unlockBlockNumber / 2 * 1000);
+      return {
+        amount: voteToCFX(item[0]),
+        endTime: formatDateTime(unlockTime),
       }
     },
 
@@ -84,7 +108,12 @@ const PoSPool = {
       this.userInfo.userStaked = BigInt(userSummary[0].toString());
       this.userInfo.locked = BigInt(userSummary[2].toString());
       this.userInfo.unlocked = BigInt(userSummary[3].toString());
-      this.userInfo.userInterest = TreeGraph.Drip(userSummary[5].toString()).toCFX();
+      // this.userInfo.userInterest = TreeGraph.Drip(userSummary[5].toString()).toCFX();
+      const userInterest = await poolContract.userInterest(this.userInfo.account);
+      this.userInfo.userInterest = TreeGraph.Drip(userInterest.toString()).toCFX();
+
+      const balance = await confluxClient.cfx.getBalance(this.userInfo.account);
+      this.userInfo.balance = trimPoints(TreeGraph.Drip(balance).toCFX());
     },
 
     async loadPoolInfo() {
@@ -98,9 +127,22 @@ const PoSPool = {
 
     async loadLastRewardInfo() {
       const {epoch} = await appClient.pos.getStatus();
-      const {powEpochHash} = await appClient.pos.getRewardsByEpoch(epoch - 1);
-      const block = await appClient.cfx.getBlockByHash(powEpochHash, false);
+      let lastReward = await appClient.pos.getRewardsByEpoch(epoch - 1);
+      if (!lastReward) {
+        lastReward = await appClient.pos.getRewardsByEpoch(epoch - 2);
+      }
+      const block = await appClient.cfx.getBlockByHash(lastReward.powEpochHash, false);
       this.poolInfo.lastRewardTime = block.timestamp;
+    },
+
+    async loadLockingList() {
+      let list = await poolContract.userInQueue(this.userInfo.account);
+      this.userInfo.userInQueue = list.map(this.mapQueueItem);
+    },
+
+    async loadUnlockingList() {
+      let list = await poolContract.userOutQueue(this.userInfo.account);
+      this.userInfo.userOutOueue = list.map(this.mapQueueItem);
     },
 
     async stake() {
