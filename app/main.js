@@ -9,6 +9,7 @@ const PoSPool = {
         totalRevenue: 0,
         userShareRatio: 0,
         apy: 0,
+        lastRewardTime: 0,
       },
       userInfo: {
         connected: false,
@@ -25,6 +26,13 @@ const PoSPool = {
 
   async created() {
     await this.loadPoolInfo();
+    await this.loadLastRewardInfo();
+  },
+
+  mounted () {
+    // toggle visibility of the app element
+    const app = document.getElementById('app');
+    app.setAttribute('class', 'container');
   },
 
   computed: {
@@ -46,6 +54,11 @@ const PoSPool = {
 
     shortenAccount() {
       return TreeGraph.address.shortenCfxAddress(this.userInfo.account);
+    },
+
+    lastRewardTime() {
+      const lastTime = new Date(this.poolInfo.lastRewardTime * 1000);
+      return `${lastTime.getFullYear()}-${lastTime.getMonth() + 1}-${lastTime.getDate()} ${lastTime.getHours()}:${lastTime.getMinutes()}:00`;
     }
   },
 
@@ -61,7 +74,9 @@ const PoSPool = {
         this.userInfo.account = account;
         this.userInfo.connected = true;
         this.loadUserInfo();
-      }  
+      } else {
+        console.log('Request account failed');
+      }
     },
 
     async loadUserInfo() {
@@ -81,76 +96,14 @@ const PoSPool = {
       this.poolInfo.apy = Number(await poolContract.poolAPY()) / 100;
     },
 
-    async withdraw() {
-      if (!this.userInfo.connected) {
-        alert('Please connect wallet');
-        return;
-      }
-      let receipt = await poolContract
-        .withdrawStake(this.userInfo.unlocked)
-        .sendTransaction({
-          from: this.userInfo.account,
-        });
-      
-      if (receipt.outcomeStatus === 0) {
-        this.loadUserInfo();
-        alert('withdraw success');
-      } else {
-        alert('withdraw failed');
-      }
-    }, 
-
-    async claim() {
-      if (!this.userInfo.connected) {
-        alert('Please connect wallet');
-        return;
-      }
-      let receipt = await poolContract
-        .claimAllInterest()
-        .sendTransaction({
-          from: this.userInfo.account,
-        });
-      
-      if (receipt.outcomeStatus === 0) {
-        this.loadUserInfo();
-        alert('claim success');
-      } else {
-        alert('claim failed');
-      }
-    }, 
-
-    async unstake() {
-      if (!this.userInfo.connected) {
-        alert('Please connect wallet');
-        return;
-      }
-      if (this.unstakeCount % ONE_VOTE_CFX != 0 ) {
-        alert('Unstake count should be multiple of 1000');
-        return;
-      }
-      // TODO check if user has enough to unstake
-      const unstakeVotePower = this.unstakeCount / ONE_VOTE_CFX;
-      let receipt = await poolContract
-        .decreaseStake(unstakeVotePower)
-        .sendTransaction({
-          from: this.userInfo.account,
-        })
-        .executed();
-
-      if (receipt.outcomeStatus === 0) {
-        this.loadUserInfo();
-        this.unstakeCount = 0;  // clear unstake count
-        alert('UnStake success');
-      } else {
-        alert('UnStake failed');
-      }
+    async loadLastRewardInfo() {
+      const {epoch} = await appClient.pos.getStatus();
+      const {powEpochHash} = await appClient.pos.getRewardsByEpoch(epoch - 1);
+      const block = await appClient.cfx.getBlockByHash(powEpochHash, false);
+      this.poolInfo.lastRewardTime = block.timestamp;
     },
 
     async stake() {
-      if (!this.userInfo.connected) {
-        alert('Please connect wallet');
-        return;
-      }
       if (this.stakeCount % ONE_VOTE_CFX != 0 ) {
         alert('Stake count should be multiple of 1000');
         return;
@@ -168,6 +121,72 @@ const PoSPool = {
         alert('Stake success');
       } else {
         alert('Stake failed');
+      }
+    }, 
+
+    async claim() {
+      if (this.userInfo.userInterest == 0 ) {
+        alert('No claimable interest');
+        return;
+      }
+      let receipt = await poolContract
+        .claimAllInterest()
+        .sendTransaction({
+          from: this.userInfo.account,
+        })
+        .executed();
+      
+      if (receipt.outcomeStatus === 0) {
+        this.loadUserInfo();
+        alert('Claim success');
+      } else {
+        alert('Claim failed');
+      }
+    }, 
+
+    async unstake() {
+      if (this.userInfo.locked === BigInt(0)) {
+        alert('No unstakeable funds');
+        return;
+      }
+      if (this.unstakeCount % ONE_VOTE_CFX != 0 ) {
+        alert('Unstake count should be multiple of 1000');
+        return;
+      }
+      const unstakeVotePower = this.unstakeCount / ONE_VOTE_CFX;
+      let receipt = await poolContract
+        .decreaseStake(unstakeVotePower)
+        .sendTransaction({
+          from: this.userInfo.account,
+        })
+        .executed();
+
+      if (receipt.outcomeStatus === 0) {
+        this.loadUserInfo();
+        this.unstakeCount = 0;  // clear unstake count
+        alert('UnStake success');
+      } else {
+        alert('UnStake failed');
+      }
+    },
+
+    async withdraw() {
+      if (this.userInfo.unlocked === BigInt(0)) {
+        alert('No withdrawable funds');
+        return;
+      }
+      let receipt = await poolContract
+        .withdrawStake(this.userInfo.unlocked.toString())
+        .sendTransaction({
+          from: this.userInfo.account,
+        })
+        .executed();
+      
+      if (receipt.outcomeStatus === 0) {
+        this.loadUserInfo();
+        alert('Withdraw success');
+      } else {
+        alert('Withdraw failed');
       }
     }
   }

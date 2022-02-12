@@ -25,7 +25,7 @@
     </style>
   </head>
   <body class="bg-light">
-    <div id='app' class="container">
+    <div id='app' class="container d-none">
       
       <div class="row justify-content-end mt-3">
         <div class="col-3">
@@ -39,7 +39,7 @@
       <div class="row mt-3">
         <div class="col text-center">
           <h1>PHX PoS Pool</h1>
-          <p>Stake your CFX in Conflux PoS to help improve the Conflux network's finality and earn more CFX</p>
+          <p>Stake your CFX in Conflux PoS to help improve the network's finality and earn PoS rewards</p>
         </div>
       </div>
 
@@ -48,13 +48,13 @@
           <div>
             <span class="h-num">{{poolInfo.totalLocked}}</span>
           </div>
-          <span class="intro-title">Total Locked</span>
+          <span class="intro-title">Total Locked (CFX)</span>
         </div>
         <div class="col-2">
           <div>
-            <span class="h-num">{{poolInfo.totalRevenue}} CFX</span>
+            <span class="h-num">{{poolInfo.totalRevenue}}</span>
           </div>
-          <span class="intro-title">Total Revenue</span>
+          <span class="intro-title">Total Revenue (CFX)</span>
         </div>
         <div class="col-2">
           <div>
@@ -86,14 +86,14 @@
         <div class="col-3">
           <div>
             <div><span class="h-num">{{userStakedCFX}}</span></div>
-            <span class="intro-title">My Staked</span>
+            <span class="intro-title">My Staked (CFX)</span>
           </div>
           <div class="row mt-2">
             <div class="col-7">
               <input class="form-control" type="number" v-model="stakeCount">
             </div>
             <div class="col-5">
-              <button class="btn btn-primary" v-on:click="stake">Stake</button>
+              <button class="btn btn-primary" v-on:click="stake" :disabled="!userInfo.connected">Stake</button>
             </div>
           </div>
         </div>
@@ -101,9 +101,10 @@
         <div class="col-3">
           <div>
             <div><span class="h-num">{{userInfo.userInterest}}</span></div>
-            <span class="intro-title">My Rewards</span>
+            <span class="intro-title">My Rewards (CFX)</span>
           </div>
-          <button class="btn btn-primary mt-2" v-on:click="claim">Claim</button>
+          <button class="btn btn-primary mt-2" v-on:click="claim" :disabled="!userInfo.connected">Claim</button>
+          <p class="intro-title" v-if="poolInfo.lastRewardTime > 0">Last Update: {{lastRewardTime}}</p>
         </div>
 
         <div class="col-3">
@@ -116,7 +117,7 @@
               <input class="form-control" type="number" v-model="unstakeCount">
             </div>
             <div class="col-5">
-              <button class="btn btn-primary" v-on:click="unstake">Unstake</button>
+              <button class="btn btn-primary" v-on:click="unstake" :disabled="!userInfo.connected">Unstake</button>
             </div>
           </div>
         </div>
@@ -126,7 +127,7 @@
             <div><span class="h-num">{{withdrawableCFX}}</span></div>
             <span class="intro-title">Withdrawable CFX</span>
           </div>
-          <button class="btn btn-primary mt-2" v-on:click="withdraw">Withdraw</button>
+          <button class="btn btn-primary mt-2" v-on:click="withdraw" :disabled="!userInfo.connected">Withdraw</button>
         </div>
       </div>
 
@@ -137,17 +138,14 @@
       <div class="row mt-3 border b-shadow rounded-3 pt-3">
         <div class="col">
           <ul>
-            <li>Rule 1</li>
-            <li>Rule 2</li>
-            <li>Rule 3</li>
-            <li>Rule 4</li>
+            <li>The Stake/Unstake CFX amount must be multiple of 1000</li>
+            <li>The lock period of Stake/Unstake is 7 day</li>
           </ul>
         </div>
       </div>
 
     </div>
 
-    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
     <script src="https://unpkg.com/vue@next"></script>
     <script src="https://cdn.jsdelivr.net/npm/js-conflux-sdk/dist/js-conflux-sdk.umd.min.js"></script>
