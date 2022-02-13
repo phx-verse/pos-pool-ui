@@ -2,24 +2,22 @@ let currentChainId = TESTNET_NET_ID;
 
 let confluxClient = new TreeGraph.Conflux({
   url: TESTNET_URL,
-  networkId: TESTNET_NET_ID
+  networkId: TESTNET_NET_ID,
 });
 // use wallet provider
 if (window.conflux) {
   confluxClient.provider = window.conflux;
 }
+
 // used for send pos RPC methods
 let appClient = new TreeGraph.Conflux({
   url: TESTNET_URL,
-  networkId: TESTNET_NET_ID
+  networkId: TESTNET_NET_ID,
 });
 
 let poolAddress = TESTNET_POOL_ADDRESS;
 
-// TODO listen for network change event
-// if (conflux) {
-//   confluxClient.provider = conflux;
-// }
+console.log('SDK version: ', confluxClient.version);
 
 const PoSPool = {
   data() {
