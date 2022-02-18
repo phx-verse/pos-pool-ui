@@ -19,18 +19,24 @@ let poolAddress = TESTNET_POOL_ADDRESS;
 
 console.log('SDK version: ', confluxClient.version);
 
+// var hashModal = new bootstrap.Modal(document.getElementById('hashModal'), {});
+
 const PoSPool = {
   data() {
     return {
       chainStatus: {},
       poolInfo: {
-        status: 'Good', // TODO load the real pool status
+        // status: 'Good', // TODO load the real pool status
+        status: {},
         name: '',
         totalLocked: 0,
         totalRevenue: 0,
         userShareRatio: 0,
         apy: 0,
         lastRewardTime: 0,
+        stakerNumber: '0',
+        posAddress: '',
+        inCommittee: false,
       },
       userInfo: {
         balance: 0,
@@ -73,8 +79,10 @@ const PoSPool = {
     this.poolContract = poolContract;
     
     // load pool info
+    await this.loadPoolMetaInfo();
     await this.loadPoolInfo();
     await this.loadLastRewardInfo();
+    await this.loadPosNodeStatus();
   },
 
   mounted () {
@@ -86,6 +94,22 @@ const PoSPool = {
   computed: {
     perFee() {
       return (BigInt(10000) - BigInt(this.poolInfo.userShareRatio)) / BigInt(100);
+    },
+
+    formatedTotalLocked() {
+      return formatUnit(this.poolInfo.totalLocked.toString(), "CFX");
+    },
+
+    formatedTotalRevenue() {
+      return formatUnit(this.poolInfo.totalRevenue.toString(), "CFX");
+    },
+
+    prettyTotalLocked() {
+      return prettyFormat(this.poolInfo.totalLocked.toString());
+    },
+
+    prettyTotalRevenue() {
+      return prettyFormat(this.poolInfo.totalRevenue.toString());
     },
 
     userStakedCFX() {
@@ -123,7 +147,8 @@ const PoSPool = {
         alert('Please install Conflux Wallet');
         return;
       }
-      const accounts = await conflux.send("cfx_requestAccounts");
+      // const accounts = await conflux.send("cfx_requestAccounts");
+      const accounts = await requestAccounts();
       const account = accounts[0];
       if (account) {
         this.userInfo.account = account;
@@ -132,7 +157,7 @@ const PoSPool = {
         await this.loadLockingList();
         await this.loadUnlockingList();
       } else {
-        console.log('Request account failed');
+        alert('Request account failed');
       }
     },
 
@@ -160,16 +185,33 @@ const PoSPool = {
       this.userInfo.balance = trimPoints(TreeGraph.Drip(balance).toCFX());
     },
 
-    async loadPoolInfo() {
+    // only need load once
+    async loadPoolMetaInfo() {
       this.poolInfo.name = await this.poolContract.poolName();
       this.poolInfo.userShareRatio = await this.poolContract.poolUserShareRatio();
+      let poolAddress = await this.poolContract.posAddress();
+      this.poolInfo.posAddress = TreeGraph.format.hex(poolAddress);
+    },
+
+    async loadPosNodeStatus() {
+      const account = await appClient.pos.getAccount(this.poolInfo.posAddress);
+      this.poolInfo.status = account.status;
+      // console.log(this.poolInfo.status);
+
+      const committee = await appClient.pos.getCommittee();
+      let nodes = committee.currentCommittee.nodes.map(item => item.address);
+      this.poolInfo.inCommittee = nodes.includes(this.poolInfo.posAddress);
+      // console.log(nodes);
+    },
+
+    async loadPoolInfo() {
       const poolSummary = await this.poolContract.poolSummary();
-      this.poolInfo.totalLocked = BigInt(poolSummary[0].toString()) * BigInt(ONE_VOTE_CFX);
-      this.poolInfo.totalRevenue = trimPoints(TreeGraph.Drip(poolSummary[2].toString()).toCFX());
+      this.poolInfo.totalLocked = BigInt(poolSummary[0].toString()) * BigInt(ONE_VOTE_CFX) * BigInt("1000000000000000000");
+      this.poolInfo.totalRevenue = BigInt(TreeGraph.Drip(poolSummary[2].toString()));
       this.poolInfo.apy = Number(await this.poolContract.poolAPY()) / 100;
 
       const stakerNumber = await this.poolContract.stakerNumber();
-      console.log('StakerCount: ', stakerNumber.toString());
+      this.poolInfo.stakerNumber = stakerNumber.toString();
     },
 
     async loadLastRewardInfo() {
@@ -193,6 +235,7 @@ const PoSPool = {
     },
 
     async stake() {
+      // hashModal.toggle();
       if (this.stakeCount % ONE_VOTE_CFX != 0 ) {
         alert('Stake count should be multiple of 1000');
         return;
@@ -204,6 +247,8 @@ const PoSPool = {
           value: TreeGraph.Drip.fromCFX(this.stakeCount),
         })
         .executed();
+
+        
       if (receipt.outcomeStatus === 0) {
         this.loadUserInfo();
         this.loadLockingList();

@@ -37,26 +37,32 @@
         </div>
       </div>
 
+      <div class="row mt-3">
+        <div class="alert alert-primary" role="alert">
+          Conflux Mainnet PHX PoS Pool will open around 12:00 Feb.23rd, 2022(GMT+8) (Block Number 92060600 or Epoch Number 36935000) 
+        </div>
+      </div>
+
       <div class="row mt-3 border b-shadow rounded-3 p-4">
-        <div class="col-3">
+        <div class="col-2">
           <div class="left-icon float-start">
             <i class="bi-bank" style="font-size: 40px; color: cornflowerblue;"></i>
           </div>
           <div>
-            <div><span class="h-num">{{poolInfo.totalLocked}}</span></div>
+            <div><span class="h-num" :title="formatedTotalLocked">{{prettyTotalLocked}}</span></div>
             <span class="intro-title">Staking Vault</span>
           </div>
         </div>
-        <div class="col-3">
+        <div class="col-2">
           <div class="left-icon float-start">
             <i class="bi-cash-coin" style="font-size: 40px; color: cornflowerblue;"></i>
           </div>
           <div>
-            <div><span class="h-num">{{poolInfo.totalRevenue}}</span></div>
+            <div><span class="h-num" :title="formatedTotalRevenue">{{prettyTotalRevenue}}</span></div>
             <span class="intro-title">Total CFX earned</span>
           </div>
         </div>
-        <div class="col-3">
+        <div class="col-2">
           <div class="left-icon float-start">
             <i class="bi-percent" style="font-size: 40px; color: cornflowerblue;"></i>
           </div>
@@ -65,27 +71,34 @@
             <span class="intro-title">Expected APY</span>
           </div>
         </div>
-        <!-- <div class="col-2">
-          <div>
-            <span class="h-num">{{perFee}}%</span>
+        <div class="col-2">
+          <div class="left-icon float-start">
+            <i class="bi-people" style="font-size: 40px; color: cornflowerblue;"></i>
           </div>
-          <span class="intro-title">Performance Fee</span>
-        </div> -->
-        <!-- <div class="col-2">
           <div>
-            <span class="h-num">{{lastRewardTime}}</span>
+            <div><span class="h-num">{{poolInfo.stakerNumber}}</span></div>
+            <span class="intro-title">Staker Number</span>
           </div>
-          <span class="intro-title">Last Reward Time</span>
-        </div> -->
-        <div class="col-3">
+        </div>
+        <div class="col-2">
           <div class="left-icon float-start">
             <i class="bi-plug" style="font-size: 40px; color: cornflowerblue;"></i>
           </div>
           <div>
             <div>
-              <span class="h-num" style="color:#42b883">{{poolInfo.status}}</span>
+              <span v-if="poolInfo.status.forceRetired === true" class="h-num" style="color:#42b883">Error</span>
+              <span v-else class="h-num" style="color:#42b883">Good</span>
             </div>
             <span class="intro-title">Pool Status</span>
+          </div>
+        </div>
+        <div class="col-2">
+          <div class="left-icon float-start">
+            <i class="bi-mortarboard" style="font-size: 40px; color: cornflowerblue;"></i>
+          </div>
+          <div>
+            <div><span class="h-num">{{poolInfo.inCommittee ? 'Yes' : 'NO'}}</span></div>
+            <span class="intro-title">In Committee</span>
           </div>
         </div>
       </div>
@@ -140,6 +153,31 @@
         </div>
       </div>
 
+      <div class="modal fade" id="hashModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            
+            <div class="modal-header" style="border-bottom: none">
+              <!-- <h5 class="modal-title" id="exampleModalLabel">Modal title</h5> -->
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>  
+            </div>
+            <div class="modal-body text-center">
+              <i class="bi-check-circle-fill" style="font-size: 40px; color: rgb(100, 237, 107);"></i>
+              <br/>
+              <span>Transaction Submitted.</span>
+              <br/>
+              <span>Transaction Hash: </span>
+              <a href="https://confluxscan.io/transaction/0x6ace6e002aef4e5e5a56f692c8809a8cf1022f099d16d2186552fed1b85b1d10">0x6ace6e...5b1d10</a>
+              <div style="height: 50px"></div>
+            </div>
+            <!-- <div class="modal-footer" style="border-top: none">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+              <button type="button" class="btn btn-primary">Save changes</button>
+            </div> -->
+          </div>
+        </div>
+      </div>
+
       <div class="row mt-4 border b-shadow rounded-3 p-4" v-if="userInfo.connected">
         <div class="col-6">
           <table class="table table-striped table-bordered caption-top">
@@ -186,7 +224,7 @@
           <ul>
             <li>The Stake/Unstake CFX amount must be multiple of 1000</li>
             <li>The lock period of Stake/Unstake is 7 day</li>
-            <li>The pool performance fee is {{perFee}}%</li>
+            <li>The pool performance fee is {{perFee}}% of PoS reward</li>
             <li>The reward will updated every hour</li>
           </ul>
         </div>
@@ -195,8 +233,8 @@
       <div class="row mt-3 mb-5">
         <div class="col text-center">
           <span class="footer-item">© 2022 PHX Verse.</span>
-          <a class="footer-item" href="https://twitter.com/phxverse">Twitter</a>
-          <a class="footer-item" href="https://github.com/phx-verse">Github</a>
+          <a class="footer-item" href="https://twitter.com/phxverse" target="_blank">Twitter</a>
+          <a class="footer-item" href="https://github.com/phx-verse" target="_blank">Github</a>
           <a class="footer-item" href="mailto:phx9@pm.me">Email</a>
         </div>
       </div>
@@ -204,11 +242,12 @@
     </div>
 
     <script src="https://unpkg.com/vue@3"></script>
+    <script src='https://cdn.jsdelivr.net/npm/big.js@6.0.0/big.min.js'></script>
     <script src="app/js-conflux-sdk.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
     <script src="app/PoolABI.js"></script>
     <script src="app/misc.js"></script>
     <script src="app/main.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
     <!-- Global site tag (gtag.js) - Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-W9RSB2BS8T"></script>
     <script>
