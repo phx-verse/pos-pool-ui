@@ -94,13 +94,22 @@
         </div>
         <div class="col-2">
           <div class="left-icon float-start">
+            <i class="bi-pin-map-fill" style="font-size: 40px; color: cornflowerblue;"></i>
+          </div>
+          <div>
+            <div><a :href="posAddressLink" target="_blank" style="line-height:30px;text-decoration:none">{{shortPosAddress}}</a></div>
+            <span class="intro-title">PoS Node address</span>
+          </div>
+        </div>
+        <!-- <div class="col-2">
+          <div class="left-icon float-start">
             <i class="bi-mortarboard" style="font-size: 40px; color: cornflowerblue;"></i>
           </div>
           <div>
             <div><span class="h-num">{{poolInfo.inCommittee ? 'Yes' : 'NO'}}</span></div>
             <span class="intro-title">In Committee</span>
           </div>
-        </div>
+        </div> -->
       </div>
 
       <div class="row mt-4 border b-shadow rounded-3 p-4">

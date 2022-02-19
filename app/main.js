@@ -1,21 +1,36 @@
-let currentChainId = TESTNET_NET_ID;
+const MAINNET = {
+  url: 'https://main.confluxrpc.com',
+  networkId: 1029,
+  poolAddress: '',
+  scan: 'https://confluxscan.io'
+};
 
-let confluxClient = new TreeGraph.Conflux({
-  url: TESTNET_URL,
-  networkId: TESTNET_NET_ID,
-});
+const TESTNET = {
+  url: 'https://test.confluxrpc.com',
+  networkId: 1,
+  poolAddress: '0x820e8a21ba781389f5715c7a04dba9847cfccb64',
+  scan: 'https://testnet.confluxscan.io'
+}
+
+const NET8888 = {
+  url: 'https://net8888cfx.confluxrpc.com',
+  networkId: 8888,
+  poolAddress: '0x8e38f187da01d54936142a5f209d05c7e85fadff',
+  scan: ''
+}
+
+let currentChainId = TESTNET.networkId;
+let poolAddress = TESTNET.poolAddress;
+let scanUrl = TESTNET.scan;
+
+let confluxClient = new TreeGraph.Conflux(TESTNET);
 // use wallet provider
 if (window.conflux) {
   confluxClient.provider = window.conflux;
 }
 
 // used for send pos RPC methods
-let appClient = new TreeGraph.Conflux({
-  url: TESTNET_URL,
-  networkId: TESTNET_NET_ID,
-});
-
-let poolAddress = TESTNET_POOL_ADDRESS;
+let appClient = new TreeGraph.Conflux(TESTNET);
 
 console.log('SDK version: ', confluxClient.version);
 
@@ -59,24 +74,19 @@ const PoSPool = {
 
     if (status.chainId !=  currentChainId) {
       if (status.chainId === NET8888_NET_ID) {
-        poolAddress = NET8888_POOL_ADDRESS;
-        confluxClient = new TreeGraph.Conflux({
-          url: NET8888_URL,
-          networkId: NET8888_NET_ID
-        });
+        confluxClient = new TreeGraph.Conflux(NET8888);
         confluxClient.provider = window.conflux;
-        appClient = new TreeGraph.Conflux({
-          url: NET8888_URL,
-          networkId: NET8888_NET_ID
-        });
+        appClient = new TreeGraph.Conflux(NET8888);
+        poolAddress = NET8888.poolAddress;
+        scanUrl = NET8888.scan;
       }
+      currentChainId = status.chainId;
     }
     
-    const poolContract = confluxClient.Contract({
+    this.poolContract = confluxClient.Contract({
       abi: PoSPoolABI,
       address: poolAddress,
     });
-    this.poolContract = poolContract;
     
     // load pool info
     await this.loadPoolMetaInfo();
@@ -105,11 +115,15 @@ const PoSPool = {
     },
 
     prettyTotalLocked() {
-      return prettyFormat(this.poolInfo.totalLocked.toString());
+      const totalLocked = this.poolInfo.totalLocked;
+      if (totalLocked === 0) return 0;
+      return prettyFormat(totalLocked.toString());
     },
 
     prettyTotalRevenue() {
-      return prettyFormat(this.poolInfo.totalRevenue.toString());
+      const totalRevenue = this.poolInfo.totalRevenue;
+      if (totalRevenue === 0) return 0;
+      return prettyFormat(totalRevenue.toString());
     },
 
     userStakedCFX() {
@@ -131,6 +145,18 @@ const PoSPool = {
     lastRewardTime() {
       const lastTime = new Date(this.poolInfo.lastRewardTime * 1000);
       return formatDateTime(lastTime);
+    },
+
+    shortPosAddress() {
+      if (!this.poolInfo.posAddress) {
+        return 'Loading...';
+      }
+      const start = this.poolInfo.posAddress.slice(0, 10);
+      return `${start}...`;
+    },
+
+    posAddressLink() {
+      return `${scanUrl}/pos/accounts/${this.poolInfo.posAddress}`;
     }
   },
 
