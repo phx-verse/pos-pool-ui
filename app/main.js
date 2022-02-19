@@ -73,7 +73,7 @@ const PoSPool = {
     const status = await this.loadChainInfo();
 
     if (status.chainId !=  currentChainId) {
-      if (status.chainId === NET8888_NET_ID) {
+      if (status.chainId === 8888) {
         confluxClient = new TreeGraph.Conflux(NET8888);
         confluxClient.provider = window.conflux;
         appClient = new TreeGraph.Conflux(NET8888);
