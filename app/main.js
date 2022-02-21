@@ -151,7 +151,7 @@ const PoSPool = {
       if (!this.poolInfo.posAddress) {
         return 'Loading...';
       }
-      const start = this.poolInfo.posAddress.slice(0, 10);
+      const start = this.poolInfo.posAddress.slice(0, 6);
       return `${start}...`;
     },
 
