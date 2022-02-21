@@ -1,7 +1,7 @@
 const MAINNET = {
   url: 'https://main.confluxrpc.com',
   networkId: 1029,
-  poolAddress: '',
+  poolAddress: 'cfx:acdj1y1r00mzvuw9s831rj1t5amst2405jv582syu0',
   scan: 'https://confluxscan.io'
 };
 
@@ -123,7 +123,7 @@ const PoSPool = {
 
     prettyTotalRevenue() {
       const totalRevenue = this.poolInfo.totalRevenue;
-      if (totalRevenue === 0) return 0;
+      if (totalRevenue == 0) return 0;
       return prettyFormat(totalRevenue.toString());
     },
 
