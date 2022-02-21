@@ -34,7 +34,7 @@ let appClient = new TreeGraph.Conflux(MAINNET);
 
 console.log('SDK version: ', confluxClient.version);
 
-// var hashModal = new bootstrap.Modal(document.getElementById('hashModal'), {});
+var hashModal = new bootstrap.Modal(document.getElementById('hashModal'), {});
 
 const PoSPool = {
   data() {
@@ -66,6 +66,7 @@ const PoSPool = {
       },
       stakeCount: 0,
       unstakeCount: 0,
+      txhash: '',
     }
   },
 
@@ -157,6 +158,16 @@ const PoSPool = {
 
     posAddressLink() {
       return `${scanUrl}/pos/accounts/${this.poolInfo.posAddress}`;
+    },
+
+    shortHash() {
+      if (!this.txhash) return '';
+      return this.txhash.slice(0, 10) + '...';
+    },
+
+    txScanLink() {
+      if (!this.txhash) return '#';
+      return `${scanUrl}/transaction/${this.txHash}`;
     }
   },
 
@@ -261,25 +272,30 @@ const PoSPool = {
     },
 
     async stake() {
-      // hashModal.toggle();
-      if (this.stakeCount % ONE_VOTE_CFX != 0 ) {
+      if (this.stakeCount === 0 || this.stakeCount % ONE_VOTE_CFX != 0 ) {
         alert('Stake count should be multiple of 1000');
         return;
       }
-      let receipt = await this.poolContract
-        .increaseStake(this.stakeCount / ONE_VOTE_CFX)
-        .sendTransaction({
-          from: this.userInfo.account,
-          value: TreeGraph.Drip.fromCFX(this.stakeCount),
-        })
-        .executed();
 
-        
+      const tx = this.poolContract
+      .increaseStake(this.stakeCount / ONE_VOTE_CFX)
+      .sendTransaction({
+        from: this.userInfo.account,
+        value: TreeGraph.Drip.fromCFX(this.stakeCount),
+      });
+
+      const hash = await tx;
+      this.txHash = hash;
+      hashModal.show();
+      
+      const receipt = await tx.executed();
+      hashModal.hide();
+
       if (receipt.outcomeStatus === 0) {
         this.loadUserInfo();
         this.loadLockingList();
         this.stakeCount = 0;  // clear stake count
-        alert('Stake success');
+        // alert('Stake success');
       } else {
         alert('Stake failed');
       }
@@ -290,16 +306,22 @@ const PoSPool = {
         alert('No claimable interest');
         return;
       }
-      let receipt = await this.poolContract
+      let tx = this.poolContract
         .claimAllInterest()
         .sendTransaction({
           from: this.userInfo.account,
-        })
-        .executed();
-      
+        });
+
+      const hash = await tx;
+      this.txHash = hash;
+      hashModal.show();
+
+      const receipt = await tx.executed();
+      hashModal.hide();
+
       if (receipt.outcomeStatus === 0) {
         this.loadUserInfo();
-        alert('Claim success');
+        // alert('Claim success');
       } else {
         alert('Claim failed');
       }
@@ -310,23 +332,30 @@ const PoSPool = {
         alert('No unstakeable funds');
         return;
       }
-      if (this.unstakeCount % ONE_VOTE_CFX != 0 ) {
+      if (this.unstakeCount === 0 || this.unstakeCount % ONE_VOTE_CFX != 0 ) {
         alert('Unstake count should be multiple of 1000');
         return;
       }
       const unstakeVotePower = this.unstakeCount / ONE_VOTE_CFX;
-      let receipt = await this.poolContract
-        .decreaseStake(unstakeVotePower)
-        .sendTransaction({
-          from: this.userInfo.account,
-        })
-        .executed();
+
+      let tx = this.poolContract
+      .decreaseStake(unstakeVotePower)
+      .sendTransaction({
+        from: this.userInfo.account,
+      });
+
+      const hash = await tx;
+      this.txHash = hash;
+      hashModal.show();
+
+      let receipt = await tx.executed();
+      hashModal.hide();
 
       if (receipt.outcomeStatus === 0) {
         this.loadUserInfo();
         this.loadUnlockingList();
         this.unstakeCount = 0;  // clear unstake count
-        alert('UnStake success');
+        // alert('UnStake success');
       } else {
         alert('UnStake failed');
       }
@@ -337,16 +366,23 @@ const PoSPool = {
         alert('No withdrawable funds');
         return;
       }
-      let receipt = await this.poolContract
-        .withdrawStake(this.userInfo.unlocked.toString())
-        .sendTransaction({
-          from: this.userInfo.account,
-        })
-        .executed();
+
+      let tx = this.poolContract
+      .withdrawStake(this.userInfo.unlocked.toString())
+      .sendTransaction({
+        from: this.userInfo.account,
+      });
+
+      const hash = await tx;
+      this.txHash = hash;
+      hashModal.show();
+
+      const receipt = await tx.executed();
+      hashModal.hide();
       
       if (receipt.outcomeStatus === 0) {
         this.loadUserInfo();
-        alert('Withdraw success');
+        // alert('Withdraw success');
       } else {
         alert('Withdraw failed');
       }
@@ -355,3 +391,19 @@ const PoSPool = {
 };
 
 Vue.createApp(PoSPool).mount('#app');
+
+/* function updateHash(hash) {
+  const hashLink = document.getElementById('hashLink');
+  hashLink.href = `${scanUrl}/tx/${hash}`;
+  hashLink.innerText = hash.slice(0, 10) + '...';
+
+  const modalEle = document.getElementById('hashModal');
+  var hashModal = new bootstrap.Modal(modalEle, {});
+  // 
+
+  modalEle.addEventListener('hidden.bs.modal', function() {
+    hashModal.dispose();
+  });
+
+  return hashModal;
+} */

@@ -21,8 +21,8 @@
             <button type="button" class="btn btn-outline-primary">
               {{shortenAccount}}
             </button>
+            &nbsp; <span class="text-primary" v-if="chainStatus.chainId === 1">TestNet</span>
           </div>
-          &nbsp; <span class="text-primary" v-if="chainStatus.chainId === 1">TestNet</span>
         </div>
       </div>
 
@@ -187,9 +187,10 @@
               <i class="bi-check-circle-fill" style="font-size: 40px; color: rgb(100, 237, 107);"></i>
               <br/>
               <span>Transaction Submitted.</span>
-              <br/>
-              <span>Transaction Hash: </span>
-              <a href="https://confluxscan.io/transaction/0x6ace6e002aef4e5e5a56f692c8809a8cf1022f099d16d2186552fed1b85b1d10">0x6ace6e...5b1d10</a>
+              <!-- <br/> -->
+              <!-- <span>Transaction Hash: </span> -->
+              <!-- <a :href="txScanLink">{{shortHash}}</a> -->
+              <!-- <a id="hashLink"></a> -->
               <div style="height: 50px"></div>
             </div>
             <!-- <div class="modal-footer" style="border-top: none">
