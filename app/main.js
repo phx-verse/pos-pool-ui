@@ -12,25 +12,25 @@ const TESTNET = {
   scan: 'https://testnet.confluxscan.io'
 }
 
-const NET8888 = {
-  url: 'https://net8888cfx.confluxrpc.com',
-  networkId: 8888,
-  poolAddress: '0x8e38f187da01d54936142a5f209d05c7e85fadff',
-  scan: ''
-}
+// const NET8888 = {
+//   url: 'https://net8888cfx.confluxrpc.com',
+//   networkId: 8888,
+//   poolAddress: '0x8e38f187da01d54936142a5f209d05c7e85fadff',
+//   scan: ''
+// }
 
-let currentChainId = TESTNET.networkId;
-let poolAddress = TESTNET.poolAddress;
-let scanUrl = TESTNET.scan;
+let currentChainId = MAINNET.networkId;
+let poolAddress = MAINNET.poolAddress;
+let scanUrl = MAINNET.scan;
 
-let confluxClient = new TreeGraph.Conflux(TESTNET);
+let confluxClient = new TreeGraph.Conflux(MAINNET);
 // use wallet provider
 if (window.conflux) {
   confluxClient.provider = window.conflux;
 }
 
 // used for send pos RPC methods
-let appClient = new TreeGraph.Conflux(TESTNET);
+let appClient = new TreeGraph.Conflux(MAINNET);
 
 console.log('SDK version: ', confluxClient.version);
 
@@ -73,12 +73,12 @@ const PoSPool = {
     const status = await this.loadChainInfo();
 
     if (status.chainId !=  currentChainId) {
-      if (status.chainId === 8888) {
-        confluxClient = new TreeGraph.Conflux(NET8888);
+      if (status.chainId === TESTNET.networkId) {
+        confluxClient = new TreeGraph.Conflux(TESTNET);
         confluxClient.provider = window.conflux;
-        appClient = new TreeGraph.Conflux(NET8888);
-        poolAddress = NET8888.poolAddress;
-        scanUrl = NET8888.scan;
+        appClient = new TreeGraph.Conflux(TESTNET);
+        poolAddress = TESTNET.poolAddress;
+        scanUrl = TESTNET.scan;
       }
       currentChainId = status.chainId;
     }
