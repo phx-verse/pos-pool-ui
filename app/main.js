@@ -12,12 +12,12 @@ const TESTNET = {
   scan: 'https://testnet.confluxscan.io'
 }
 
-// const NET8888 = {
-//   url: 'https://net8888cfx.confluxrpc.com',
-//   networkId: 8888,
-//   poolAddress: '0x8e38f187da01d54936142a5f209d05c7e85fadff',
-//   scan: ''
-// }
+/* const NET8888 = {
+  url: 'https://net8888cfx.confluxrpc.com',
+  networkId: 8888,
+  poolAddress: '0x8e38f187da01d54936142a5f209d05c7e85fadff',
+  scan: ''
+} */
 
 let currentChainId = MAINNET.networkId;
 let poolAddress = MAINNET.poolAddress;
@@ -90,10 +90,15 @@ const PoSPool = {
     });
     
     // load pool info
-    await this.loadPoolMetaInfo();
-    await this.loadPoolInfo();
-    await this.loadLastRewardInfo();
-    await this.loadPosNodeStatus();
+    this.loadPoolMetaInfo();
+    this.loadPoolInfo();
+    // await this.loadLastRewardInfo();
+    // await this.loadPosNodeStatus();
+
+    // auto connect user
+    if (window.conflux && localStorage.getItem('userConnected')) {
+      await this._requestAccount();
+    }
   },
 
   mounted () {
@@ -185,17 +190,25 @@ const PoSPool = {
         return;
       }
       // const accounts = await conflux.send("cfx_requestAccounts");
+      const account = await this._requestAccount();
+      if (!account) {
+        alert('Request account failed');
+      } else {
+        localStorage.setItem('userConnected', true);
+      }
+
+    },
+
+    async _requestAccount() {
       const accounts = await requestAccounts();
       const account = accounts[0];
-      if (account) {
-        this.userInfo.account = account;
-        this.userInfo.connected = true;
-        this.loadUserInfo();
-        await this.loadLockingList();
-        await this.loadUnlockingList();
-      } else {
-        alert('Request account failed');
-      }
+      if (!account) return null;
+      this.userInfo.account = account;
+      this.userInfo.connected = true;
+      this.loadUserInfo();
+      await this.loadLockingList();
+      await this.loadUnlockingList();
+      return account;
     },
 
     mapQueueItem(item) {
