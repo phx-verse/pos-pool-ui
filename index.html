@@ -138,7 +138,8 @@
               <input class="form-control" type="number" v-model="stakeCount">
             </div>
             <div class="col-md-5 col-12">
-              <button class="btn btn-primary" v-on:click="stake" :disabled="!userInfo.connected">Stake</button>
+              <button class="btn btn-primary" v-on:click="stake" :disabled="true">Stake</button>
+              <!-- <button class="btn btn-primary" v-on:click="stake" :disabled="!userInfo.connected">Stake</button> -->
             </div>
           </div>
           <p class="intro-title mt-1" v-if="userInfo.connected">Balance: {{userInfo.balance}} CFX</p>
@@ -149,7 +150,7 @@
             <div><span class="h-num">{{userInfo.userInterest}}</span></div>
             <span class="intro-title">My Rewards (CFX)</span>
           </div>
-          <button class="btn btn-primary mt-2" v-on:click="claim" :disabled="!userInfo.connected">Claim</button>
+          <button class="btn btn-primary mt-2" v-on:click="claim" :disabled="true">Claim</button>
           <p class="intro-title mt-1" v-if="userInfo.connected && poolInfo.lastRewardTime > 0">Last Update: {{lastRewardTime}}</p>
         </div>
 
@@ -163,7 +164,7 @@
               <input class="form-control" type="number" v-model="unstakeCount">
             </div>
             <div class="col-md-5 col-12">
-              <button class="btn btn-primary" v-on:click="unstake" :disabled="!userInfo.connected">Unstake</button>
+              <button class="btn btn-primary" v-on:click="unstake" :disabled="true">Unstake</button>
             </div>
           </div>
         </div>
@@ -173,7 +174,7 @@
             <div><span class="h-num">{{withdrawableCFX}}</span></div>
             <span class="intro-title">Withdrawable CFX</span>
           </div>
-          <button class="btn btn-primary mt-2" v-on:click="withdraw" :disabled="!userInfo.connected">Withdraw</button>
+          <button class="btn btn-primary mt-2" v-on:click="withdraw" :disabled="true">Withdraw</button>
         </div>
       </div>
 
