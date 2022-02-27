@@ -92,8 +92,8 @@ const PoSPool = {
     // load pool info
     this.loadPoolMetaInfo();
     this.loadPoolInfo();
-    // await this.loadLastRewardInfo();
-    // await this.loadPosNodeStatus();
+    this.loadLastRewardInfo();
+    this.loadPosNodeStatus();
 
     // auto connect user
     if (window.conflux && localStorage.getItem('userConnected')) {
@@ -213,7 +213,6 @@ const PoSPool = {
 
     mapQueueItem(item) {
       let now = new Date().getTime();
-      // TODO chainStatus must have here
       let unlockBlockNumber = Number(item[1].toString()) - this.chainStatus.blockNumber;
       let unlockTime = new Date(now + unlockBlockNumber / 2 * 1000);
       return {
@@ -248,9 +247,9 @@ const PoSPool = {
       this.poolInfo.status = account.status;
       // console.log(this.poolInfo.status);
 
-      const committee = await appClient.pos.getCommittee();
-      let nodes = committee.currentCommittee.nodes.map(item => item.address);
-      this.poolInfo.inCommittee = nodes.includes(this.poolInfo.posAddress);
+      // const committee = await appClient.pos.getCommittee();
+      // let nodes = committee.currentCommittee.nodes.map(item => item.address);
+      // this.poolInfo.inCommittee = nodes.includes(this.poolInfo.posAddress);
       // console.log(nodes);
     },
 
