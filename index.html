@@ -39,15 +39,11 @@
           <br/>
         </div> -->
         <div class="alert alert-primary" role="alert">
-          1. The Genesis PoS staking has finished at blockNubmer 92751800.
+          1. The Conflux PoS has started working at epochNumber 37400000 and staking is reopen now.
           <br/>
-          2. The staking will reopen at epochNumber 37400000, and also is PoS reward.
+          2. The pool performance fee in the first week will be 0.01%, after that (March.7th) it will back to 4% of the PoS reward.
           <br/>
-          3. The earlier you stake, the reward will be higher.
-          <br/>
-          4. The pool performance fee in the first week will be 0.01%, after that (March.7th) it will back to 4% of the PoS reward.
-          <br/>
-          5. The first 100 staker will gain a PHX PoS Pool genesis NFT
+          3. The first 100 staker will gain a PHX PoS Pool genesis NFT
           <br/>
         </div>
       </div>
@@ -138,8 +134,7 @@
               <input class="form-control" type="number" v-model="stakeCount">
             </div>
             <div class="col-md-5 col-12">
-              <button class="btn btn-primary" v-on:click="stake" :disabled="true">Stake</button>
-              <!-- <button class="btn btn-primary" v-on:click="stake" :disabled="!userInfo.connected">Stake</button> -->
+              <button class="btn btn-primary" v-on:click="stake" :disabled="!userInfo.connected">Stake</button>
             </div>
           </div>
           <p class="intro-title mt-1" v-if="userInfo.connected">Balance: {{userInfo.balance}} CFX</p>
@@ -150,7 +145,7 @@
             <div><span class="h-num">{{userInfo.userInterest}}</span></div>
             <span class="intro-title">My Rewards (CFX)</span>
           </div>
-          <button class="btn btn-primary mt-2" v-on:click="claim" :disabled="true">Claim</button>
+          <button class="btn btn-primary mt-2" v-on:click="claim" :disabled="!userInfo.connected">Claim</button>
           <p class="intro-title mt-1" v-if="userInfo.connected && poolInfo.lastRewardTime > 0">Last Update: {{lastRewardTime}}</p>
         </div>
 
@@ -164,7 +159,7 @@
               <input class="form-control" type="number" v-model="unstakeCount">
             </div>
             <div class="col-md-5 col-12">
-              <button class="btn btn-primary" v-on:click="unstake" :disabled="true">Unstake</button>
+              <button class="btn btn-primary" v-on:click="unstake" :disabled="!userInfo.connected">Unstake</button>
             </div>
           </div>
         </div>
@@ -174,7 +169,7 @@
             <div><span class="h-num">{{withdrawableCFX}}</span></div>
             <span class="intro-title">Withdrawable CFX</span>
           </div>
-          <button class="btn btn-primary mt-2" v-on:click="withdraw" :disabled="true">Withdraw</button>
+          <button class="btn btn-primary mt-2" v-on:click="withdraw" :disabled="!userInfo.connected">Withdraw</button>
         </div>
       </div>
 
