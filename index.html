@@ -35,8 +35,7 @@
 
       <div class="row mt-3">
         <div class="alert alert-info" role="alert">
-          Note: The APY is calculated based on the past seven days rewards. Considering there is no reward in the registration period, so the APY is lower than the actual value. 
-          The actual APY should be above 10%. It will back to the accurate value in the next several days.
+          Note: The APY calculate logic has changed to use latest 24 hour rewards. Which will show a more real-time APY.
         </div>
       </div>
 
@@ -65,7 +64,7 @@
           </div>
           <div>
             <div><span class="h-num" :title="formatedTotalRevenue">{{prettyTotalRevenue}}</span></div>
-            <span class="intro-title">Total CFX earned</span>
+            <span class="intro-title">Total earned</span>
           </div>
         </div>
         <div class="col-6 col-md-4 col-lg-2">
