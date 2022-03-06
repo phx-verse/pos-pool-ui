@@ -2,25 +2,29 @@ const MAINNET = {
   url: 'https://main.confluxrpc.com',
   networkId: 1029,
   poolAddress: 'cfx:acdj1y1r00mzvuw9s831rj1t5amst2405jv582syu0',
-  scan: 'https://confluxscan.io'
+  scan: 'https://confluxscan.io',
+  nftAddress: 'cfx:acaemjexx8xx33n9s9jndmyz2871e90x4jw3zfyphy',
 };
 
 const TESTNET = {
   url: 'https://test.confluxrpc.com',
   networkId: 1,
   poolAddress: '0x820e8a21ba781389f5715c7a04dba9847cfccb64',
-  scan: 'https://testnet.confluxscan.io'
+  scan: 'https://testnet.confluxscan.io',
+  nftAddress: 'cfxtest:achnjxz9rhvct9gsu87n54yept6zn9znt2mem6nmva',
 }
 
 /* const NET8888 = {
   url: 'https://net8888cfx.confluxrpc.com',
   networkId: 8888,
   poolAddress: '0x8e38f187da01d54936142a5f209d05c7e85fadff',
-  scan: ''
+  scan: '',
+  nftAddress: ""
 } */
 
 let currentChainId = MAINNET.networkId;
 let poolAddress = MAINNET.poolAddress;
+let nftAddress = MAINNET.nftAddress;
 let scanUrl = MAINNET.scan;
 
 let confluxClient = new TreeGraph.Conflux(MAINNET);
@@ -57,12 +61,14 @@ const PoSPool = {
         balance: 0,
         connected: false,
         userStaked: BigInt(0),
+        available: BigInt(0),
         userInterest: 0,
         account: '',
         locked: BigInt(0),
         unlocked: BigInt(0),
         userInQueue: [],
         userOutOueue: [],
+        nftCount: 0,
       },
       stakeCount: 0,
       unstakeCount: 0,
@@ -79,6 +85,7 @@ const PoSPool = {
         confluxClient.provider = window.conflux;
         appClient = new TreeGraph.Conflux(TESTNET);
         poolAddress = TESTNET.poolAddress;
+        nftAddress = TESTNET.nftAddress;
         scanUrl = TESTNET.scan;
       }
       currentChainId = status.chainId;
@@ -88,11 +95,17 @@ const PoSPool = {
       abi: PoSPoolABI,
       address: poolAddress,
     });
+
+    this.nftContract = confluxClient.Contract({
+      abi: PoSNFTABI,
+      address: nftAddress
+    });
     
     // load pool info
-    this.loadPoolMetaInfo();
+    
     this.loadPoolInfo();
     this.loadLastRewardInfo();
+    await this.loadPoolMetaInfo();
     this.loadPosNodeStatus();
 
     // auto connect user
@@ -173,6 +186,21 @@ const PoSPool = {
     txScanLink() {
       if (!this.txhash) return '#';
       return `${scanUrl}/transaction/${this.txHash}`;
+    },
+
+    vip() {
+      const available = this.userInfo.available;
+      if (available >= 1000) { // VIP4(100w) 2%
+        return 4;
+      } else if (available >= 100) { // VIP3(10w) 3%
+        return 3;
+      } else if (available >= 50){ // VIP2(5w) 4%
+        return 2;
+      } else if (available >= 10) { // VIP1(1w) 5%
+        return 1;
+      } else {
+        return 0;
+      }
     }
   },
 
@@ -208,6 +236,7 @@ const PoSPool = {
       this.loadUserInfo();
       await this.loadLockingList();
       await this.loadUnlockingList();
+      await this.loadNFTInfo();
       return account;
     },
 
@@ -224,6 +253,7 @@ const PoSPool = {
     async loadUserInfo() {
       const userSummary = await this.poolContract.userSummary(this.userInfo.account);
       this.userInfo.userStaked = BigInt(userSummary[0].toString());
+      this.userInfo.available = BigInt(userSummary[1].toString());
       this.userInfo.locked = BigInt(userSummary[2].toString());
       this.userInfo.unlocked = BigInt(userSummary[3].toString());
       // this.userInfo.userInterest = TreeGraph.Drip(userSummary[5].toString()).toCFX();
@@ -236,7 +266,7 @@ const PoSPool = {
 
     // only need load once
     async loadPoolMetaInfo() {
-      this.poolInfo.name = await this.poolContract.poolName();
+      // this.poolInfo.name = await this.poolContract.poolName();
       this.poolInfo.userShareRatio = await this.poolContract.poolUserShareRatio();
       let poolAddress = await this.poolContract.posAddress();
       this.poolInfo.posAddress = TreeGraph.format.hex(poolAddress);
@@ -281,6 +311,11 @@ const PoSPool = {
     async loadUnlockingList() {
       let list = await this.poolContract.userOutQueue(this.userInfo.account);
       this.userInfo.userOutOueue = list.map(this.mapQueueItem);
+    },
+
+    async loadNFTInfo() {
+      const count = await this.nftContract.balanceOf(this.userInfo.account);
+      this.userInfo.nftCount = Number(count.toString());
     },
 
     async stake() {

@@ -21,7 +21,8 @@
             <button type="button" class="btn btn-outline-primary">
               {{shortenAccount}}
             </button>
-            &nbsp; <span class="text-primary" v-if="chainStatus.chainId === 1">TestNet</span>
+            <span class="text-primary">&nbsp; VIP{{vip}}</span>
+            <span class="text-primary" v-if="chainStatus.chainId === 1">&nbsp; TestNet</span>
           </div>
         </div>
       </div>
@@ -33,12 +34,12 @@
         </div>
       </div>
 
-      <div class="row mt-3">
+      <!-- <div class="row mt-3">
         <div class="alert alert-primary" role="alert">
           The PHX Pool Genesis NFT has been awarded to the first 100 stakers, check it in your Confluxscan account page.
           <br/>
         </div>
-      </div>
+      </div> -->
 
       <div class="row mt-3 border b-shadow rounded-3 p-4">
         <div class="col-6 col-md-4 col-lg-2">
@@ -222,17 +223,33 @@
         </div>
       </div>
 
-      <div class="mt-4">
-        <h4>Stake Rules</h4>
+      <div class="row mt-4 border b-shadow rounded-3 p-3" v-if="userInfo.nftCount>0">
+        <div class="col">
+          <h5>Genesis NFT:</h5>
+          <img src="https://pospool.phxverse.com/NFT/PHX_PoS_Pool_Genesis_NFT_Small.png" alt="" width="180">
+        </div>
       </div>
 
-      <div class="row mt-3 border b-shadow rounded-3 pt-3">
+      <div class="row mt-4 border b-shadow rounded-3 pt-3">
         <div class="col">
+          <h5>VIP Rules:</h5>
+          <ul>
+            <li>VIP0. Staked CFX 0-1w, performance fee 6% </li>
+            <li>VIP1. Staked CFX 1w-5w, performance fee 5% </li>
+            <li>VIP2. Staked CFX 5w-10w, performance fee 4% </li>
+            <li>VIP3. Staked CFX 10w-100w, performance fee 3% </li>
+            <li>VIP4. Staked CFX >100w, performance fee 2% </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="row mt-4 border b-shadow rounded-3 pt-3">
+        <div class="col">
+          <h5>Stake Rules:</h5>
           <ul>
             <li>The Stake/Unstake CFX amount must be multiple of 1000</li>
             <li>The lock period of Stake/Unstake is 7 day</li>
             <!-- <li>The pool performance fee is {{perFee}}% of PoS reward</li> -->
-            <li>The pool performance fee is 0.01% of PoS reward</li>
             <li>The reward will updated every hour</li>
           </ul>
         </div>
