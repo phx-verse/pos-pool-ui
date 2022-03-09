@@ -203,6 +203,22 @@
         </div>
       </div>
 
+      <div class="modal fade" id="withdrawModal" tabindex="-2" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header" style="border-bottom: none">
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>  
+            </div>
+            <div class="modal-body text-center">
+              <i class="bi-hourglass-split" style="font-size: 40px; color: cornflowerblue;"></i>
+              <br/>
+              <span>The unlock time is estimated by PoW block number is not very accurate. Your votes is still unlocking, please try again several hours later</span>
+              <div style="height: 50px"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="row mt-4 border b-shadow rounded-3 p-4" v-if="userInfo.connected">
         <div class="col-md-6 col-12">
           <table class="table table-striped table-bordered caption-top">
@@ -287,7 +303,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
     <script src="app/PoolABI.js?id=2237"></script>
     <script src="app/misc.js?id=2237"></script>
-    <script src="app/main.js?id=2237"></script>
+    <script src="app/main.js?id=2239"></script>
     <!-- Global site tag (gtag.js) - Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-W9RSB2BS8T"></script>
     <script>

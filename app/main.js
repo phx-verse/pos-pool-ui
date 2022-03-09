@@ -38,7 +38,8 @@ let appClient = new TreeGraph.Conflux(MAINNET);
 
 console.log('SDK version: ', confluxClient.version);
 
-var hashModal = new bootstrap.Modal(document.getElementById('hashModal'), {});
+let hashModal = new bootstrap.Modal(document.getElementById('hashModal'), {});
+let withdrawModal = new bootstrap.Modal(document.getElementById('withdrawModal'), {});
 
 const PoSPool = {
   data() {
@@ -414,24 +415,29 @@ const PoSPool = {
         return;
       }
 
-      let tx = this.poolContract
-      .withdrawStake(this.userInfo.unlocked.toString())
-      .sendTransaction({
-        from: this.userInfo.account,
-      });
+      try{
+        let tx = this.poolContract
+        .withdrawStake(this.userInfo.unlocked.toString())
+        .sendTransaction({
+          from: this.userInfo.account,
+        });
 
-      const hash = await tx;
-      this.txHash = hash;
-      hashModal.show();
+        const hash = await tx;
+        this.txHash = hash;
+        hashModal.show();
 
-      const receipt = await tx.executed();
-      hashModal.hide();
-      
-      if (receipt.outcomeStatus === 0) {
-        this.loadUserInfo();
-        // alert('Withdraw success');
-      } else {
-        alert('Withdraw failed');
+        const receipt = await tx.executed();
+        hashModal.hide();
+        
+        if (receipt.outcomeStatus === 0) {
+          this.loadUserInfo();
+          // alert('Withdraw success');
+        } else {
+          alert('Withdraw failed');
+        }
+      } catch(err) {
+        console.log("The unlock time is estimated by PoW block number is not very accurate. Your votes is still unlocking, please try again several hours later", err);
+        withdrawModal.show();
       }
     }
   }
