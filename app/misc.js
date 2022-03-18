@@ -20,6 +20,10 @@ function formatDateTime(date) {
   return `${date.getFullYear()}-${paddingZero(date.getMonth() + 1)}-${paddingZero(date.getDate())} ${paddingZero(date.getHours())}:${paddingZero(date.getMinutes())}:${paddingZero(date.getSeconds())}`;
 }
 
+function formatTime(date) {
+  return `${paddingZero(date.getHours())}:${paddingZero(date.getMinutes())}:${paddingZero(date.getSeconds())}`;
+}
+
 function requestAccounts() {
   if (conflux.isFluent) {
     return conflux.request({

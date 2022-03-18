@@ -113,6 +113,8 @@ const PoSPool = {
     if (window.conflux && localStorage.getItem('userConnected')) {
       await this._requestAccount();
     }
+
+    this.loadRewardData();
   },
 
   mounted () {
@@ -439,11 +441,51 @@ const PoSPool = {
         console.log("The unlock time is estimated by PoW block number is not very accurate. Your votes is still unlocking, please try again several hours later", err);
         withdrawModal.show();
       }
+    },
+
+    loadRewardData() {
+      const posAddress = '0xd8a68700530423e992d571e82467e67b3bce5940cd9cfa14f6615b8a11a3dba2';
+      const url = `https://confluxscan.io/stat/list-pos-account-reward?identifier=${posAddress}&limit=20&orderBy=createdAt&reverse=true`;
+      fetch(url)
+        .then(response => response.json())
+        .then(data => {
+          initLineChart(data);
+        });
     }
   }
 };
 
 Vue.createApp(PoSPool).mount('#app');
+
+function initLineChart(rewards) {
+  const { list } = rewards;
+  const labels = list.map(item => formatTime(new Date(item.createdAt)));
+  const items = list.map(item => {
+    const formated = formatUnit(item.reward, 'CFX');
+    const onlyValue = formated.split(' ')[0];
+    return Number(onlyValue);
+  });
+
+  const data = {
+    labels: labels.reverse(),
+    datasets: [{
+      label: 'Rewards Per Hour (CFX)',
+      backgroundColor: 'rgb(66, 184, 131)',
+      borderColor: 'cornflowerblue',
+      data: items.reverse(),
+    }]
+  };
+
+  const config = {
+    type: 'line',
+    data: data,
+    options: {}
+  };
+
+  document.getElementById('rewardChartContainer').removeAttribute('style');
+  const chartEle = document.getElementById('rewardChart')
+  const rewardChart = new Chart(chartEle, config);
+}
 
 /* function updateHash(hash) {
   const hashLink = document.getElementById('hashLink');
