@@ -326,6 +326,10 @@ const PoSPool = {
         alert('Stake count should be multiple of 1000');
         return;
       }
+      if (Number(this.userInfo.balance) < Number(this.stakeCount)) {
+        alert('Insufficient balance');
+        return;
+      }
 
       const tx = this.poolContract
       .increaseStake(this.stakeCount / ONE_VOTE_CFX)
