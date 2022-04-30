@@ -24,7 +24,7 @@ function formatTime(date) {
   return `${paddingZero(date.getHours())}:${paddingZero(date.getMinutes())}:${paddingZero(date.getSeconds())}`;
 }
 
-function requestAccounts() {
+function requestCoreAccounts() {
   if (conflux.isFluent) {
     return conflux.request({
       method: "cfx_requestAccounts"
@@ -90,4 +90,8 @@ function formatUnit(value, unitName) {
     }
   }
   return value;
+}
+
+function bnToBigInt(bn) {
+  return BigInt(bn.toString());
 }
