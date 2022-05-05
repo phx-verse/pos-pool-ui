@@ -26,7 +26,7 @@
             <li class="nav-item" @click="changeSpace('Core')">
               <a :class="`nav-link ${space.value == 'Core' ? 'active' : ''}`" href="#">Core</a>
             </li>
-            <li v-if="config.value.espaceAddress" class="nav-item" @click="changeSpace('eSpace')">
+            <li v-if="config.value.eSpaceAddress" class="nav-item" @click="changeSpace('eSpace')">
               <a :class="`nav-link ${space.value == 'eSpace' ? 'active' : ''}`" href="#">eSpace</a>
             </li>
           </ul>

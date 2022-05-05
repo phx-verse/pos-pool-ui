@@ -1,19 +1,37 @@
 let coreClient = new TreeGraph.Conflux(CURRENT);
 console.log('SDK version: ', coreClient.version);
 
-// use wallet provider
-/* if (window.conflux) {
-  coreClient.provider = window.conflux;
-} */
-
 let hashModal = new bootstrap.Modal(document.getElementById('hashModal'), {});
 let withdrawModal = new bootstrap.Modal(document.getElementById('withdrawModal'), {});
 
 const PoSPool = {
   watch: {
     'space.value'(newSpace, old) {
+      console.log('Space change: ', newSpace);
       this.contract.setCurrentNetwork(newSpace);
-      // TODO: refresh data
+      //
+      if (newSpace === 'Core') {
+        if (this.coreAccount) {
+          this.userInfo.account = this.coreAccount;
+          this.userInfo.connected = true;
+          this.loadAllUserInfo();
+        } else {
+          this.userInfo.account = '';
+          this.userInfo.connected = false;
+          this.resetUserInfo();
+        }
+      } else if(newSpace === 'eSpace') {
+        if (this.eSpaceAccount) {
+          this.userInfo.account = this.eSpaceAccount;
+          this.userInfo.connected = true;
+          this.loadAllUserInfo();
+        } else {
+          this.userInfo.account = '';
+          this.userInfo.connected = false;
+          this.resetUserInfo();
+        }
+      }
+      this.loadPoolInfo();
     } 
   },
   data() {
@@ -21,7 +39,6 @@ const PoSPool = {
       space: spaceStore,
       config: configStore,
       chainStatus: {},
-      espaceBlockNumber: 0,
       poolInfo: {
         // status: 'Good', // TODO load the real pool status
         status: {},
@@ -38,12 +55,12 @@ const PoSPool = {
       userInfo: {
         balance: 0,
         connected: false,
-        votes: BigInt(0),
-        available: BigInt(0),
+        votes: 0n,
+        available: 0n,
         userInterest: 0,
         account: '',
-        locked: BigInt(0),
-        unlocked: BigInt(0),
+        locked: 0n,
+        unlocked: 0n,
         userInQueue: [],
         userOutOueue: [],
         nftCount: 0,
@@ -51,46 +68,48 @@ const PoSPool = {
       stakeCount: 0,  // stake input value
       unstakeCount: 0, // unstake input value
       txhash: '',
+      eSpaceBlockNumber: 0,
+      eSpaceAccount: '',
+      coreAccount: '',
     }
   },
 
   async created() {
-    const status = await this.loadChainInfo();
-    if (status.chainId !=  CURRENT.networkId) {
-      if (status.chainId === TESTNET.networkId) {
-        CURRENT = TESTNET;
-        configStore.value = TESTNET;
-        coreClient = new TreeGraph.Conflux(TESTNET);
-        // coreClient.provider = window.conflux;
-      } else if (status.chainId === TESTNET.networkId) {
+    // Detect current network
+    if (ethereum) {
+      if (ethereum.networkVersion == MAINNET.eNetId) {
         CURRENT = MAINNET;
-        configStore.value = MAINNET;
-        coreClient = new TreeGraph.Conflux(MAINNET);
-        // coreClient.provider = window.conflux;
+      } else if (ethereum.networkVersion == TESTNET.eNetId) {
+        CURRENT = TESTNET;
+      }
+    } else if(conflux) {
+      let status = await conflux.request({method: 'cfx_getStatus'});
+      let netId = Number(status.chainId);
+      if (netId === MAINNET.networkId) {
+        CURRENT = MAINNET;
+      } else if (netId === TESTNET.networkId) {
+        CURRENT = TESTNET;
       }
     }
+    console.log('Current network: ', CURRENT);
+    this.config.value = CURRENT;
+    coreClient = new TreeGraph.Conflux(CURRENT);
     
-    this.poolContract = coreClient.Contract({
-      abi: PoSPoolABI,
-      address: CURRENT.poolAddress,
-    });
-
     this.contract = new PoSPoolContract({
       network: this.space.value,
       coreAddress: TESTNET.poolAddress,
       coreRpc: TESTNET.url,
       coreNetId: TESTNET.networkId,
-      espaceAddress: TESTNET.espaceAddress,
-      espaceRpc: TESTNET.espaceRpc,
+      eSpaceAddress: TESTNET.eSpaceAddress,
+      eSpaceRpc: TESTNET.eSpaceRpc,
     });
     
     // load pool info
     this.loadPoolInfo();
-    this.loadPoolMetaInfo();
+    await this.loadPoolMetaInfo();
+    this.loadRewardChartData();
     // this.loadLastRewardInfo();
     // this.loadPosNodeStatus();
-
-    this.loadRewardChartData();
   },
 
   mounted () {
@@ -138,7 +157,7 @@ const PoSPool = {
 
     shortenAccount() {
       const account = this.userInfo.account;
-      if (this.isCore()) {
+      if (account.match(':')) {
         return TreeGraph.address.shortenCfxAddress(account);
       } else {
         return `${account.slice(0, 4)}...${account.slice(-4)}`;
@@ -194,7 +213,23 @@ const PoSPool = {
       return this.space.value === 'Core';
     },
 
-    async loadChainInfo() {
+    resetUserInfo() {
+      this.userInfo = {
+        balance: 0,
+        connected: false,
+        votes: 0n,
+        available: 0n,
+        userInterest: 0,
+        account: '',
+        locked: 0n,
+        unlocked: 0n,
+        userInQueue: [],
+        userOutOueue: [],
+        nftCount: 0,
+      };
+    },
+
+    async loadCoreChainInfo() {
       const status = await coreClient.cfx.getStatus();
       this.chainStatus = status;
       return status;
@@ -214,23 +249,30 @@ const PoSPool = {
         const account = accounts[0];
         this.userInfo.account = account;
         this.userInfo.connected = true;
-        localStorage.setItem('userConnected', true);
+        this.coreAccount = account;
         //
         await this.loadAllUserInfo();
         this.loadNFTInfo();
 
         this.contract.setCoreProvider(window.conflux);
+
+        await this.loadCoreChainInfo();
+
+        if (this.chainStatus.chainId !== CURRENT.networkId) {
+          alert('Please switch wallet to ' + CURRENT.networkId);
+          return;
+        }
       } else {
         if (typeof window.ethereum === 'undefined') {
           alert('Please install Metamask');
           return;
         }
-        // TODO: change network
-        // console.log(ethereum.networkVersion);
-        // console.log(ethereum.selectedAddress);
+        if (ethereum.networkVersion != CURRENT.eNetId) {
+          alert('Please switch wallet to ' + CURRENT.eNetId);
+          return;
+        }
         const provider = new ethers.providers.Web3Provider(window.ethereum);
         const accounts = await provider.send("eth_requestAccounts", []);
-        // const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
         if (accounts.length === 0) {
           alert('Request account failed');
           return;
@@ -239,17 +281,21 @@ const PoSPool = {
 
         this.userInfo.account = account;
         this.userInfo.connected = true;
-        this.contract.setESpaceProvider(provider);
-        let blockNumber = await provider.getBlockNumber()
-        this.espaceBlockNumber = blockNumber;
+        this.eSpaceAccount = account;
+        
         await this.loadAllUserInfo();
+
+        this.contract.setESpaceProvider(provider);
+
+        let blockNumber = await provider.getBlockNumber()
+        this.eSpaceBlockNumber = blockNumber;
       }
     },
 
     async loadAllUserInfo() {
       this.loadUserInfo();
-      await this.loadLockingList();
-      await this.loadUnlockingList();
+      this.loadLockingList();
+      this.loadUnlockingList();
     },
 
     mapQueueItem(item) {
@@ -259,7 +305,7 @@ const PoSPool = {
         let unlockBlockNumber = Number(item.endBlock) - this.chainStatus.blockNumber;
         unlockTime = new Date(now + unlockBlockNumber / 2 * 1000);
       } else {
-        let unlockBlockNumber = Number(item.endBlock) - this.espaceBlockNumber;
+        let unlockBlockNumber = Number(item.endBlock) - this.eSpaceBlockNumber;
         unlockTime = new Date(now + unlockBlockNumber * 1000);
       }
       return {
@@ -293,12 +339,6 @@ const PoSPool = {
     async loadPosNodeStatus() {
       const account = await coreClient.pos.getAccount(this.poolInfo.posAddress);
       this.poolInfo.status = account.status;
-      // console.log(this.poolInfo.status);
-
-      // const committee = await coreClient.pos.getCommittee();
-      // let nodes = committee.currentCommittee.nodes.map(item => item.address);
-      // this.poolInfo.inCommittee = nodes.includes(this.poolInfo.posAddress);
-      // console.log(nodes);
     },
 
     async loadPoolInfo() {
@@ -356,16 +396,17 @@ const PoSPool = {
         .increaseStake(this.stakeCount, this.userInfo.account);
       this.txHash = hash;
       hashModal.show();
-      
-      // TODO update userInfo
-      // if (receipt.outcomeStatus === 0) {
-      //   this.loadUserInfo();
-      //   this.loadLockingList();
-      //   this.stakeCount = 0;  // clear stake count
-      //   // alert('Stake success');
-      // } else {
-      //   alert('Stake failed');
-      // }
+
+      this.contract.waitTx(hash).then(receipt => {
+        hashModal.hide();
+        if (receipt.status === 0) { // success
+          this.loadUserInfo();
+          this.loadLockingList();
+          this.stakeCount = 0;  // clear stake count
+        } else {
+          alert('Stake failed');
+        }
+      });
     }, 
 
     async claim() {
@@ -379,15 +420,14 @@ const PoSPool = {
       this.txHash = hash;
       hashModal.show();
 
-      // const receipt = await tx.executed();
-      // hashModal.hide();
-
-      // if (receipt.outcomeStatus === 0) {
-      //   this.loadUserInfo();
-      //   // alert('Claim success');
-      // } else {
-      //   alert('Claim failed');
-      // }
+      this.contract.waitTx(hash).then(receipt => {
+        hashModal.hide();
+        if (receipt.status === 0) {
+          this.loadUserInfo();
+        } else {
+          alert('Claim failed');
+        }
+      });
     }, 
 
     async unstake() {
@@ -408,17 +448,16 @@ const PoSPool = {
       this.txHash = hash;
       hashModal.show();
 
-      // let receipt = await tx.executed();
-      // hashModal.hide();
-
-      // if (receipt.outcomeStatus === 0) {
-      //   this.loadUserInfo();
-      //   this.loadUnlockingList();
-      //   this.unstakeCount = 0;  // clear unstake count
-      //   // alert('UnStake success');
-      // } else {
-      //   alert('UnStake failed');
-      // }
+      this.contract.waitTx(hash).then(receipt => {
+        hashModal.hide();
+        if (receipt.status === 0) {
+          this.loadUserInfo();
+          this.loadUnlockingList();
+          this.unstakeCount = 0;  // clear unstake count
+        } else {
+          alert('UnStake failed');
+        }
+      });
     },
 
     async withdraw() {
@@ -435,15 +474,14 @@ const PoSPool = {
         this.txHash = hash;
         hashModal.show();
 
-        // const receipt = await tx.executed();
-        // hashModal.hide();
-        
-        // if (receipt.outcomeStatus === 0) {
-        //   this.loadUserInfo();
-        //   // alert('Withdraw success');
-        // } else {
-        //   alert('Withdraw failed');
-        // }
+        this.contract.waitTx(hash).then(receipt => {
+          hashModal.hide();
+          if (receipt.status === 0) {
+            this.loadUserInfo();
+          } else {
+            alert('Withdraw failed');
+          }
+        });
       } catch(err) {
         console.log("The unlock time is estimated by PoW block number is not very accurate. Your votes is still unlocking, please try again several hours later", err);
         withdrawModal.show();
@@ -493,19 +531,3 @@ function initLineChart(rewards) {
   const rewardChart = new Chart(chartEle, config);
   return rewardChart;
 }
-
-/* function updateHash(hash) {
-  const hashLink = document.getElementById('hashLink');
-  hashLink.href = `${CURRENT.scanURL}/tx/${hash}`;
-  hashLink.innerText = hash.slice(0, 10) + '...';
-
-  const modalEle = document.getElementById('hashModal');
-  var hashModal = new bootstrap.Modal(modalEle, {});
-  // 
-
-  modalEle.addEventListener('hidden.bs.modal', function() {
-    hashModal.dispose();
-  });
-
-  return hashModal;
-} */

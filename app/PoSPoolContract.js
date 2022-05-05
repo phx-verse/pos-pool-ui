@@ -3,12 +3,12 @@ class PoSPoolContract {
   constructor(options) {
     this.options = options;
     const {
-      network,  // current network
+      network,  // current network: Core/eSpace
       coreAddress, 
       coreRpc, 
       coreNetId,
-      espaceAddress,
-      espaceRpc,
+      eSpaceAddress,
+      eSpaceRpc,
     } = options;
     
     this.network = network;
@@ -22,14 +22,10 @@ class PoSPoolContract {
       address: coreAddress,
     });
 
-    console.log(this.network);
-
-    // TODO connect to wallet
-    if (espaceAddress && espaceRpc) {
-      const provider = new ethers.providers.JsonRpcProvider(espaceRpc);
-      const espaceContract = new ethers.Contract(espaceAddress, PoSPoolABI, provider);
-      
-      this.espaceContract = espaceContract;
+    if (eSpaceAddress && eSpaceRpc) {
+      const provider = new ethers.providers.JsonRpcProvider(eSpaceRpc);
+      const eSpaceContract = new ethers.Contract(eSpaceAddress, PoSPoolABI, provider);
+      this.eSpaceContract = eSpaceContract;
       this.ethClient = provider;
     }
   }
@@ -42,7 +38,7 @@ class PoSPoolContract {
   setESpaceProvider(provider) {
     this.ethClient = provider;
     const signer = provider.getSigner();
-    this.espaceContract = this.espaceContract.connect(signer);
+    this.eSpaceContract = this.eSpaceContract.connect(signer);
   }
 
   setCoreProvider(provider) {
@@ -54,7 +50,7 @@ class PoSPoolContract {
   }
 
   contract() {
-    return this.isCore() ? this.coreContract : this.espaceContract;
+    return this.isCore() ? this.coreContract : this.eSpaceContract;
   }
 
   async getBalance(addr) {
@@ -145,7 +141,7 @@ class PoSPoolContract {
         });
       return txHash;
     } else {
-      let tx = await this.espaceContract.increaseStake(votes, {
+      let tx = await this.eSpaceContract.increaseStake(votes, {
         value: ethers.utils.parseEther(stakeAmount.toString())
       });
       return tx.hash;
@@ -161,7 +157,7 @@ class PoSPoolContract {
         });
       return txHash;
     } else {
-      let tx = await this.espaceContract.decreaseStake(votes);
+      let tx = await this.eSpaceContract.decreaseStake(votes);
       return tx.hash;
     }
   }
@@ -175,7 +171,7 @@ class PoSPoolContract {
         });
       return txHash;
     } else {
-      let tx = await this.espaceContract.claimAllInterest();
+      let tx = await this.eSpaceContract.claimAllInterest();
       return tx.hash;
     }
   }
@@ -189,8 +185,43 @@ class PoSPoolContract {
         });
       return txHash;
     } else {
-      let tx = await this.espaceContract.withdrawStake(votes);
+      let tx = await this.eSpaceContract.withdrawStake(votes);
       return tx.hash;
     }
   }
+
+  async waitTx(hash) {
+    if (this.isCore()) {
+      let count = 0;
+      while(count < 20) {
+        let receipt = await this.cfxClient.cfx.getTransactionReceipt(hash);
+        if (receipt) {
+          return {
+            receipt,
+            status: receipt.outcomeStatus,  // 0: success other: failed
+          };
+        }
+        await sleep(3);  // wait 3s
+        count++;
+      }
+    } else {
+      let count = 0;
+      while(count < 20) {
+        let receipt = await this.ethClient.getTransactionReceipt(hash);
+        if (receipt) {
+          return {
+            receipt,
+            status: receipt.status === 1 ? 0 : 1,  // 0: success other: failed
+          };
+        }
+        await sleep(3);  // wait 3s
+        count++;
+      }
+    }
+    return null;
+  }
+}
+
+async function sleep(n = 1) {
+  await new Promise(resolve => setTimeout(resolve, 1000 * n));
 }
