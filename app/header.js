@@ -34,11 +34,11 @@ const TESTNET = {
 let CURRENT = MAINNET;
 
 const spaceStore = Vue.reactive({
-  value: 'eSpace'
+  value: 'Core'
 });
 
 const configStore = Vue.reactive({
-  value: TESTNET,  // 默认值
+  value: CURRENT,  // 默认值
 });
 
 const navbarOption = {

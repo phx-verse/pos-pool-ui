@@ -24,14 +24,19 @@ function formatTime(date) {
   return `${paddingZero(date.getHours())}:${paddingZero(date.getMinutes())}:${paddingZero(date.getSeconds())}`;
 }
 
-function requestCoreAccounts() {
+function confluxRequest(options) {
   if (conflux.isFluent) {
-    return conflux.request({
-      method: "cfx_requestAccounts"
-    });
+    return conflux.request(options);
   } else {
-    return conflux.send("cfx_requestAccounts");
+    const params = options.params || [];
+    return conflux.send(options.method, ...params);
   } 
+}
+
+function requestCoreAccounts() {
+  return confluxRequest({
+    method: "cfx_requestAccounts"
+  });
 }
 
 const Units = [{

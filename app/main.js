@@ -76,18 +76,18 @@ const PoSPool = {
 
   async created() {
     // Detect current network
-    if (ethereum) {
-      if (ethereum.networkVersion == MAINNET.eNetId) {
-        CURRENT = MAINNET;
-      } else if (ethereum.networkVersion == TESTNET.eNetId) {
-        CURRENT = TESTNET;
-      }
-    } else if(conflux) {
-      let status = await conflux.request({method: 'cfx_getStatus'});
+    if(conflux) {
+      let status = await confluxRequest({method: 'cfx_getStatus'});
       let netId = Number(status.chainId);
       if (netId === MAINNET.networkId) {
         CURRENT = MAINNET;
       } else if (netId === TESTNET.networkId) {
+        CURRENT = TESTNET;
+      }
+    } else if (ethereum) {
+      if (ethereum.networkVersion == MAINNET.eNetId) {
+        CURRENT = MAINNET;
+      } else if (ethereum.networkVersion == TESTNET.eNetId) {
         CURRENT = TESTNET;
       }
     }
@@ -97,19 +97,22 @@ const PoSPool = {
     
     this.contract = new PoSPoolContract({
       network: this.space.value,
-      coreAddress: TESTNET.poolAddress,
-      coreRpc: TESTNET.url,
-      coreNetId: TESTNET.networkId,
-      eSpaceAddress: TESTNET.eSpaceAddress,
-      eSpaceRpc: TESTNET.eSpaceRpc,
+      coreAddress: CURRENT.poolAddress,
+      coreRpc: CURRENT.url,
+      coreNetId: CURRENT.networkId,
+      eSpaceAddress: CURRENT.eSpaceAddress,
+      eSpaceRpc: CURRENT.eSpaceRpc,
     });
     
     // load pool info
     this.loadPoolInfo();
     await this.loadPoolMetaInfo();
     this.loadRewardChartData();
-    // this.loadLastRewardInfo();
-    // this.loadPosNodeStatus();
+
+    if (CURRENT.networkId === MAINNET.networkId) {
+      this.loadLastRewardTime();
+      this.loadPosNodeStatus();
+    }
   },
 
   mounted () {
@@ -120,7 +123,7 @@ const PoSPool = {
 
   computed: {
     perFee() {
-      return (BigInt(10000) - this.poolInfo.userShareRatio) / BigInt(100);
+      return (10000n - this.poolInfo.userShareRatio) / 100n;
     },
 
     formatedTotalLocked() {
@@ -252,7 +255,7 @@ const PoSPool = {
         this.coreAccount = account;
         //
         await this.loadAllUserInfo();
-        this.loadNFTInfo();
+        this.loadUserNFTInfo();
 
         this.contract.setCoreProvider(window.conflux);
 
@@ -282,6 +285,8 @@ const PoSPool = {
         this.userInfo.account = account;
         this.userInfo.connected = true;
         this.eSpaceAccount = account;
+
+        // TODO watch on account change
         
         await this.loadAllUserInfo();
 
@@ -294,8 +299,8 @@ const PoSPool = {
 
     async loadAllUserInfo() {
       this.loadUserInfo();
-      this.loadLockingList();
-      this.loadUnlockingList();
+      this.loadUserLockingList();
+      this.loadUserUnlockingList();
     },
 
     mapQueueItem(item) {
@@ -351,7 +356,7 @@ const PoSPool = {
       this.poolInfo.stakerNumber = stakerNumber.toString();
     },
 
-    async loadLastRewardInfo() {
+    async loadLastRewardTime() {
       const {epoch} = await coreClient.pos.getStatus();
       let lastReward = await coreClient.pos.getRewardsByEpoch(epoch - 1);
       if (!lastReward) {
@@ -361,17 +366,17 @@ const PoSPool = {
       this.poolInfo.lastRewardTime = block.timestamp;
     },
 
-    async loadLockingList() {
+    async loadUserLockingList() {
       let list = await this.contract.userInQueue(this.userInfo.account);
       this.userInfo.userInQueue = list.map(this.mapQueueItem);
     },
 
-    async loadUnlockingList() {
+    async loadUserUnlockingList() {
       let list = await this.contract.userOutQueue(this.userInfo.account);
       this.userInfo.userOutOueue = list.map(this.mapQueueItem);
     },
 
-    async loadNFTInfo() {
+    async loadUserNFTInfo() {
       if (!CURRENT.nftAddress) return;
       nftContract = coreClient.Contract({
         abi: PoSNFTABI,
@@ -401,7 +406,7 @@ const PoSPool = {
         hashModal.hide();
         if (receipt.status === 0) { // success
           this.loadUserInfo();
-          this.loadLockingList();
+          this.loadUserLockingList();
           this.stakeCount = 0;  // clear stake count
         } else {
           alert('Stake failed');
@@ -452,7 +457,7 @@ const PoSPool = {
         hashModal.hide();
         if (receipt.status === 0) {
           this.loadUserInfo();
-          this.loadUnlockingList();
+          this.loadUserUnlockingList();
           this.unstakeCount = 0;  // clear unstake count
         } else {
           alert('UnStake failed');
