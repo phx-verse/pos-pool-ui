@@ -24,14 +24,19 @@ function formatTime(date) {
   return `${paddingZero(date.getHours())}:${paddingZero(date.getMinutes())}:${paddingZero(date.getSeconds())}`;
 }
 
-function requestAccounts() {
+function confluxRequest(options) {
   if (conflux.isFluent) {
-    return conflux.request({
-      method: "cfx_requestAccounts"
-    });
+    return conflux.request(options);
   } else {
-    return conflux.send("cfx_requestAccounts");
+    const params = options.params || [];
+    return conflux.send(options.method, ...params);
   } 
+}
+
+function requestCoreAccounts() {
+  return confluxRequest({
+    method: "cfx_requestAccounts"
+  });
 }
 
 const Units = [{
@@ -90,4 +95,8 @@ function formatUnit(value, unitName) {
     }
   }
   return value;
+}
+
+function bnToBigInt(bn) {
+  return BigInt(bn.toString());
 }

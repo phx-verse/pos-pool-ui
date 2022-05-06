@@ -12,6 +12,28 @@
     <link rel="stylesheet" href="styles/style.css">
   </head>
   <body class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary" id="navbar">
+      <div class="container">
+        <a class="navbar-brand" href="#">
+          <img src="/favicon.ico" alt="" width="30" height="30" class="d-inline-block align-text-top">
+          PHXPool
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <li class="nav-item" @click="changeSpace('Core')">
+              <a :class="`nav-link ${space.value == 'Core' ? 'active' : ''}`" href="#">Core</a>
+            </li>
+            <li v-if="config.value.eSpaceAddress" class="nav-item" @click="changeSpace('eSpace')">
+              <a :class="`nav-link ${space.value == 'eSpace' ? 'active' : ''}`" href="#">eSpace</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
     <div id='app' class="container d-none">
       
       <div class="row justify-content-end mt-3">
@@ -21,7 +43,7 @@
             <button type="button" class="btn btn-outline-primary">
               {{shortenAccount}}
             </button>
-            <span class="text-primary">&nbsp; VIP{{vip}}</span>
+            <span class="text-primary" v-if="space.value === 'Core'">&nbsp; VIP{{vip}}</span>
             <span class="text-primary" v-if="chainStatus.chainId === 1">&nbsp; TestNet</span>
           </div>
         </div>
@@ -263,16 +285,6 @@
 
       <div class="row mt-4 border b-shadow rounded-3 pt-3">
         <div class="col-12 col-lg-6">
-          <h5>VIP Rules:</h5>
-          <ul>
-            <li>VIP0. Staked CFX 0-10k, performance fee 6% </li>
-            <li>VIP1. Staked CFX 10k-50k, performance fee 5% </li>
-            <li>VIP2. Staked CFX 50k-100k, performance fee 4% </li>
-            <li>VIP3. Staked CFX 100k-1000k, performance fee 3% </li>
-            <li>VIP4. Staked CFX > 1000k, performance fee 2% </li>
-          </ul>
-        </div>
-        <div class="col-12 col-lg-6">
           <h5>Stake Rules:</h5>
           <ul>
             <li>The Stake/Unstake CFX amount must be multiple of 1000</li>
@@ -280,6 +292,16 @@
             <!-- <li>The pool performance fee is {{perFee}}% of PoS reward</li> -->
             <li>The reward will updated every hour</li>
             <li>The reward can be claimed any time</li>
+          </ul>
+        </div>
+        <div class="col-12 col-lg-6" v-if="space.value === 'Core'">
+          <h5>VIP Rules:</h5>
+          <ul>
+            <li>VIP0. Staked CFX 0-10k, performance fee 6% </li>
+            <li>VIP1. Staked CFX 10k-50k, performance fee 5% </li>
+            <li>VIP2. Staked CFX 50k-100k, performance fee 4% </li>
+            <li>VIP3. Staked CFX 100k-1000k, performance fee 3% </li>
+            <li>VIP4. Staked CFX > 1000k, performance fee 2% </li>
           </ul>
         </div>
       </div>
@@ -298,10 +320,13 @@
     <script src="https://unpkg.com/vue@3"></script>
     <script src='https://cdn.jsdelivr.net/npm/big.js@6.0.0/big.min.js'></script>
     <script src="app/js-conflux-sdk.umd.min.js"></script>
+    <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js" type="application/javascript"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="app/PoolABI.js?id=2237"></script>
-    <script src="app/misc.js?id=22318"></script>
+    <script src="app/PoSPoolContract.js"></script>
+    <script src="app/utils.js?id=22318"></script>
+    <script src="app/header.js"></script>
     <script src="app/main.js?id=22330"></script>
     <!-- Global site tag (gtag.js) - Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-W9RSB2BS8T"></script>
@@ -309,7 +334,6 @@
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-
       gtag('config', 'G-W9RSB2BS8T');
     </script>
   </body>

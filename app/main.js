@@ -1,49 +1,43 @@
-const MAINNET = {
-  url: 'https://main.confluxrpc.com',
-  networkId: 1029,
-  poolAddress: 'cfx:acdj1y1r00mzvuw9s831rj1t5amst2405jv582syu0',
-  scan: 'https://confluxscan.io',
-  nftAddress: 'cfx:acaemjexx8xx33n9s9jndmyz2871e90x4jw3zfyphy',
-};
-
-const TESTNET = {
-  url: 'https://test.confluxrpc.com',
-  networkId: 1,
-  poolAddress: '0x820e8a21ba781389f5715c7a04dba9847cfccb64',
-  scan: 'https://testnet.confluxscan.io',
-  nftAddress: 'cfxtest:achnjxz9rhvct9gsu87n54yept6zn9znt2mem6nmva',
-}
-
-/* const NET8888 = {
-  url: 'https://net8888cfx.confluxrpc.com',
-  networkId: 8888,
-  poolAddress: '0x8e38f187da01d54936142a5f209d05c7e85fadff',
-  scan: '',
-  nftAddress: ""
-} */
-
-let currentChainId = MAINNET.networkId;
-let poolAddress = MAINNET.poolAddress;
-let nftAddress = MAINNET.nftAddress;
-let scanUrl = MAINNET.scan;
-
-let confluxClient = new TreeGraph.Conflux(MAINNET);
-// use wallet provider
-if (window.conflux) {
-  confluxClient.provider = window.conflux;
-}
-
-// used for send pos RPC methods
-let appClient = new TreeGraph.Conflux(MAINNET);
-
-console.log('SDK version: ', confluxClient.version);
+let coreClient = new TreeGraph.Conflux(CURRENT);
+console.log('SDK version: ', coreClient.version);
 
 let hashModal = new bootstrap.Modal(document.getElementById('hashModal'), {});
 let withdrawModal = new bootstrap.Modal(document.getElementById('withdrawModal'), {});
 
 const PoSPool = {
+  watch: {
+    'space.value'(newSpace, old) {
+      console.log('Space change: ', newSpace);
+      this.contract.setCurrentNetwork(newSpace);
+      //
+      if (newSpace === 'Core') {
+        if (this.coreAccount) {
+          this.userInfo.account = this.coreAccount;
+          this.userInfo.connected = true;
+          this.loadAllUserInfo();
+        } else {
+          this.userInfo.account = '';
+          this.userInfo.connected = false;
+          this.resetUserInfo();
+        }
+      } else if(newSpace === 'eSpace') {
+        if (this.eSpaceAccount) {
+          this.userInfo.account = this.eSpaceAccount;
+          this.userInfo.connected = true;
+          this.loadAllUserInfo();
+        } else {
+          this.userInfo.account = '';
+          this.userInfo.connected = false;
+          this.resetUserInfo();
+        }
+      }
+      this.loadPoolInfo();
+    } 
+  },
   data() {
     return {
+      space: spaceStore,
+      config: configStore,
       chainStatus: {},
       poolInfo: {
         // status: 'Good', // TODO load the real pool status
@@ -51,7 +45,7 @@ const PoSPool = {
         name: '',
         totalLocked: 0,
         totalRevenue: 0,
-        userShareRatio: 0,
+        userShareRatio: 0n,
         apy: 0,
         lastRewardTime: 0,
         stakerNumber: '0',
@@ -61,60 +55,64 @@ const PoSPool = {
       userInfo: {
         balance: 0,
         connected: false,
-        userStaked: BigInt(0),
-        available: BigInt(0),
+        votes: 0n,
+        available: 0n,
         userInterest: 0,
         account: '',
-        locked: BigInt(0),
-        unlocked: BigInt(0),
+        locked: 0n,
+        unlocked: 0n,
         userInQueue: [],
         userOutOueue: [],
         nftCount: 0,
       },
-      stakeCount: 0,
-      unstakeCount: 0,
+      stakeCount: 0,  // stake input value
+      unstakeCount: 0, // unstake input value
       txhash: '',
+      eSpaceBlockNumber: 0,
+      eSpaceAccount: '',
+      coreAccount: '',
     }
   },
 
   async created() {
-    const status = await this.loadChainInfo();
-
-    if (status.chainId !=  currentChainId) {
-      if (status.chainId === TESTNET.networkId) {
-        confluxClient = new TreeGraph.Conflux(TESTNET);
-        confluxClient.provider = window.conflux;
-        appClient = new TreeGraph.Conflux(TESTNET);
-        poolAddress = TESTNET.poolAddress;
-        nftAddress = TESTNET.nftAddress;
-        scanUrl = TESTNET.scan;
+    // Detect current network
+    if(conflux) {
+      let status = await confluxRequest({method: 'cfx_getStatus'});
+      let netId = Number(status.chainId);
+      if (netId === MAINNET.networkId) {
+        CURRENT = MAINNET;
+      } else if (netId === TESTNET.networkId) {
+        CURRENT = TESTNET;
       }
-      currentChainId = status.chainId;
+    } else if (ethereum) {
+      if (ethereum.networkVersion == MAINNET.eNetId) {
+        CURRENT = MAINNET;
+      } else if (ethereum.networkVersion == TESTNET.eNetId) {
+        CURRENT = TESTNET;
+      }
     }
+    console.log('Current network: ', CURRENT);
+    this.config.value = CURRENT;
+    coreClient = new TreeGraph.Conflux(CURRENT);
     
-    this.poolContract = confluxClient.Contract({
-      abi: PoSPoolABI,
-      address: poolAddress,
-    });
-
-    this.nftContract = confluxClient.Contract({
-      abi: PoSNFTABI,
-      address: nftAddress
+    this.contract = new PoSPoolContract({
+      network: this.space.value,
+      coreAddress: CURRENT.poolAddress,
+      coreRpc: CURRENT.url,
+      coreNetId: CURRENT.networkId,
+      eSpaceAddress: CURRENT.eSpaceAddress,
+      eSpaceRpc: CURRENT.eSpaceRpc,
     });
     
     // load pool info
-    
     this.loadPoolInfo();
-    this.loadLastRewardInfo();
     await this.loadPoolMetaInfo();
-    this.loadPosNodeStatus();
+    this.loadRewardChartData();
 
-    // auto connect user
-    if (window.conflux && localStorage.getItem('userConnected')) {
-      await this._requestAccount();
+    if (CURRENT.networkId === MAINNET.networkId) {
+      this.loadLastRewardTime();
+      this.loadPosNodeStatus();
     }
-
-    this.loadRewardData();
   },
 
   mounted () {
@@ -125,7 +123,7 @@ const PoSPool = {
 
   computed: {
     perFee() {
-      return (BigInt(10000) - BigInt(this.poolInfo.userShareRatio)) / BigInt(100);
+      return (10000n - this.poolInfo.userShareRatio) / 100n;
     },
 
     formatedTotalLocked() {
@@ -149,7 +147,7 @@ const PoSPool = {
     },
 
     userStakedCFX() {
-      return this.userInfo.userStaked * BigInt(ONE_VOTE_CFX);
+      return this.userInfo.votes * BigInt(ONE_VOTE_CFX);
     },
 
     unstakeableCFX() {
@@ -161,7 +159,12 @@ const PoSPool = {
     },
 
     shortenAccount() {
-      return TreeGraph.address.shortenCfxAddress(this.userInfo.account);
+      const account = this.userInfo.account;
+      if (account.match(':')) {
+        return TreeGraph.address.shortenCfxAddress(account);
+      } else {
+        return `${account.slice(0, 4)}...${account.slice(-4)}`;
+      }
     },
 
     lastRewardTime() {
@@ -178,7 +181,7 @@ const PoSPool = {
     },
 
     posAddressLink() {
-      return `${scanUrl}/pos/accounts/${this.poolInfo.posAddress}`;
+      return `${CURRENT.scanURL}/pos/accounts/${this.poolInfo.posAddress}`;
     },
 
     shortHash() {
@@ -188,7 +191,7 @@ const PoSPool = {
 
     txScanLink() {
       if (!this.txhash) return '#';
-      return `${scanUrl}/transaction/${this.txHash}`;
+      return `${CURRENT.scanURL}/transaction/${this.txHash}`;
     },
 
     vip() {
@@ -209,115 +212,177 @@ const PoSPool = {
 
   methods: {
 
-    async loadChainInfo() {
-      const status = await confluxClient.cfx.getStatus();
+    isCore() {
+      return this.space.value === 'Core';
+    },
+
+    resetUserInfo() {
+      this.userInfo = {
+        balance: 0,
+        connected: false,
+        votes: 0n,
+        available: 0n,
+        userInterest: 0,
+        account: '',
+        locked: 0n,
+        unlocked: 0n,
+        userInQueue: [],
+        userOutOueue: [],
+        nftCount: 0,
+      };
+    },
+
+    async loadCoreChainInfo() {
+      const status = await coreClient.cfx.getStatus();
       this.chainStatus = status;
       return status;
     },
 
     async connectWallet() {
-      if (!window.conflux) {
-        alert('Please install Conflux Wallet');
-        return;
-      }
-      // const accounts = await conflux.send("cfx_requestAccounts");
-      const account = await this._requestAccount();
-      if (!account) {
-        alert('Request account failed');
-      } else {
-        localStorage.setItem('userConnected', true);
-      }
+      if (this.isCore()) {
+        if (!window.conflux) {
+          alert('Please install Conflux Wallet');
+          return;
+        }
+        const accounts = await requestCoreAccounts();
+        if (accounts.length === 0) {
+          alert('Request account failed');
+          return;
+        }
+        const account = accounts[0];
+        this.userInfo.account = account;
+        this.userInfo.connected = true;
+        this.coreAccount = account;
+        //
+        await this.loadAllUserInfo();
+        this.loadUserNFTInfo();
 
+        this.contract.setCoreProvider(window.conflux);
+
+        await this.loadCoreChainInfo();
+
+        if (this.chainStatus.chainId !== CURRENT.networkId) {
+          alert('Please switch wallet to ' + CURRENT.networkId);
+          return;
+        }
+      } else {
+        if (typeof window.ethereum === 'undefined') {
+          alert('Please install Metamask');
+          return;
+        }
+        if (ethereum.networkVersion != CURRENT.eNetId) {
+          alert('Please switch wallet to ' + CURRENT.eNetId);
+          return;
+        }
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const accounts = await provider.send("eth_requestAccounts", []);
+        if (accounts.length === 0) {
+          alert('Request account failed');
+          return;
+        }
+        const account = accounts[0];
+
+        this.userInfo.account = account;
+        this.userInfo.connected = true;
+        this.eSpaceAccount = account;
+
+        // TODO watch on account change
+        
+        await this.loadAllUserInfo();
+
+        this.contract.setESpaceProvider(provider);
+
+        let blockNumber = await provider.getBlockNumber()
+        this.eSpaceBlockNumber = blockNumber;
+      }
     },
 
-    async _requestAccount() {
-      const accounts = await requestAccounts();
-      const account = accounts[0];
-      if (!account) return null;
-      this.userInfo.account = account;
-      this.userInfo.connected = true;
+    async loadAllUserInfo() {
       this.loadUserInfo();
-      await this.loadLockingList();
-      await this.loadUnlockingList();
-      await this.loadNFTInfo();
-      return account;
+      this.loadUserLockingList();
+      this.loadUserUnlockingList();
     },
 
     mapQueueItem(item) {
       let now = new Date().getTime();
-      let unlockBlockNumber = Number(item[1].toString()) - this.chainStatus.blockNumber;
-      let unlockTime = new Date(now + unlockBlockNumber / 2 * 1000);
+      let unlockTime;
+      if (this.isCore()) {
+        let unlockBlockNumber = Number(item.endBlock) - this.chainStatus.blockNumber;
+        unlockTime = new Date(now + unlockBlockNumber / 2 * 1000);
+      } else {
+        let unlockBlockNumber = Number(item.endBlock) - this.eSpaceBlockNumber;
+        unlockTime = new Date(now + unlockBlockNumber * 1000);
+      }
       return {
-        amount: voteToCFX(item[0]),
+        amount: voteToCFX(item.votePower),
         endTime: formatDateTime(unlockTime),
       }
     },
 
     async loadUserInfo() {
-      const userSummary = await this.poolContract.userSummary(this.userInfo.account);
-      this.userInfo.userStaked = BigInt(userSummary[0].toString());
-      this.userInfo.available = BigInt(userSummary[1].toString());
-      this.userInfo.locked = BigInt(userSummary[2].toString());
-      this.userInfo.unlocked = BigInt(userSummary[3].toString());
-      // this.userInfo.userInterest = TreeGraph.Drip(userSummary[5].toString()).toCFX();
-      const userInterest = await this.poolContract.userInterest(this.userInfo.account);
+      const userSummary = await this.contract.userSummary(this.userInfo.account);
+      this.userInfo.votes = userSummary.votes;
+      this.userInfo.available = userSummary.available;
+      this.userInfo.locked = userSummary.locked;
+      this.userInfo.unlocked = userSummary.unlocked;
+
+      const userInterest = await this.contract.userInterest(this.userInfo.account);
       this.userInfo.userInterest = trimPoints(TreeGraph.Drip(userInterest.toString()).toCFX());
 
-      const balance = await confluxClient.cfx.getBalance(this.userInfo.account);
-      this.userInfo.balance = trimPoints(TreeGraph.Drip(balance).toCFX());
+      const balance = await this.contract.getBalance(this.userInfo.account);
+      this.userInfo.balance = trimPoints(TreeGraph.Drip(balance.toString()).toCFX());
     },
 
     // only need load once
     async loadPoolMetaInfo() {
-      // this.poolInfo.name = await this.poolContract.poolName();
-      this.poolInfo.userShareRatio = await this.poolContract.poolUserShareRatio();
-      let poolAddress = await this.poolContract.posAddress();
-      this.poolInfo.posAddress = TreeGraph.format.hex(poolAddress);
+      this.poolInfo.name = await this.contract.poolName();
+      this.poolInfo.userShareRatio = await this.contract.poolUserShareRatio();
+      let poolPosAddress = await this.contract.posAddress();
+      this.poolInfo.posAddress = TreeGraph.format.hex(poolPosAddress);
     },
 
     async loadPosNodeStatus() {
-      const account = await appClient.pos.getAccount(this.poolInfo.posAddress);
+      const account = await coreClient.pos.getAccount(this.poolInfo.posAddress);
       this.poolInfo.status = account.status;
-      // console.log(this.poolInfo.status);
-
-      // const committee = await appClient.pos.getCommittee();
-      // let nodes = committee.currentCommittee.nodes.map(item => item.address);
-      // this.poolInfo.inCommittee = nodes.includes(this.poolInfo.posAddress);
-      // console.log(nodes);
     },
 
     async loadPoolInfo() {
-      const poolSummary = await this.poolContract.poolSummary();
-      this.poolInfo.totalLocked = BigInt(poolSummary[0].toString()) * BigInt(ONE_VOTE_CFX) * BigInt("1000000000000000000");
-      this.poolInfo.totalRevenue = BigInt(TreeGraph.Drip(poolSummary[2].toString()));
-      this.poolInfo.apy = Number(await this.poolContract.poolAPY()) / 100;
+      const poolSummary = await this.contract.poolSummary();
+      this.poolInfo.totalLocked = poolSummary.available * BigInt(ONE_VOTE_CFX) * BigInt("1000000000000000000");
+      this.poolInfo.totalRevenue = poolSummary.totalInterest;
+      this.poolInfo.apy = await this.contract.poolAPY() / 100n;
 
-      const stakerNumber = await this.poolContract.stakerNumber();
+      const stakerNumber = await this.contract.stakerNumber();
       this.poolInfo.stakerNumber = stakerNumber.toString();
     },
 
-    async loadLastRewardInfo() {
-      const {epoch} = await appClient.pos.getStatus();
-      let lastReward = await appClient.pos.getRewardsByEpoch(epoch - 1);
+    async loadLastRewardTime() {
+      const {epoch} = await coreClient.pos.getStatus();
+      let lastReward = await coreClient.pos.getRewardsByEpoch(epoch - 1);
       if (!lastReward) {
-        lastReward = await appClient.pos.getRewardsByEpoch(epoch - 2);
+        lastReward = await coreClient.pos.getRewardsByEpoch(epoch - 2);
       }
-      const block = await appClient.cfx.getBlockByHash(lastReward.powEpochHash, false);
+      const block = await coreClient.cfx.getBlockByHash(lastReward.powEpochHash, false);
       this.poolInfo.lastRewardTime = block.timestamp;
     },
 
-    async loadLockingList() {
-      let list = await this.poolContract.userInQueue(this.userInfo.account);
+    async loadUserLockingList() {
+      let list = await this.contract.userInQueue(this.userInfo.account);
       this.userInfo.userInQueue = list.map(this.mapQueueItem);
     },
 
-    async loadUnlockingList() {
-      let list = await this.poolContract.userOutQueue(this.userInfo.account);
+    async loadUserUnlockingList() {
+      let list = await this.contract.userOutQueue(this.userInfo.account);
       this.userInfo.userOutOueue = list.map(this.mapQueueItem);
     },
 
-    async loadNFTInfo() {
-      const count = await this.nftContract.balanceOf(this.userInfo.account);
+    async loadUserNFTInfo() {
+      if (!CURRENT.nftAddress) return;
+      nftContract = coreClient.Contract({
+        abi: PoSNFTABI,
+        address: CURRENT.nftAddress
+      });
+      const count = await nftContract.balanceOf(this.userInfo.account);
       this.userInfo.nftCount = Number(count.toString());
     },
 
@@ -331,28 +396,22 @@ const PoSPool = {
         return;
       }
 
-      const tx = this.poolContract
-      .increaseStake(this.stakeCount / ONE_VOTE_CFX)
-      .sendTransaction({
-        from: this.userInfo.account,
-        value: TreeGraph.Drip.fromCFX(this.stakeCount),
-      });
-
-      const hash = await tx;
+      const hash = await this
+        .contract
+        .increaseStake(this.stakeCount, this.userInfo.account);
       this.txHash = hash;
       hashModal.show();
-      
-      const receipt = await tx.executed();
-      hashModal.hide();
 
-      if (receipt.outcomeStatus === 0) {
-        this.loadUserInfo();
-        this.loadLockingList();
-        this.stakeCount = 0;  // clear stake count
-        // alert('Stake success');
-      } else {
-        alert('Stake failed');
-      }
+      this.contract.waitTx(hash).then(receipt => {
+        hashModal.hide();
+        if (receipt.status === 0) { // success
+          this.loadUserInfo();
+          this.loadUserLockingList();
+          this.stakeCount = 0;  // clear stake count
+        } else {
+          alert('Stake failed');
+        }
+      });
     }, 
 
     async claim() {
@@ -360,25 +419,20 @@ const PoSPool = {
         alert('No claimable interest');
         return;
       }
-      let tx = this.poolContract
-        .claimAllInterest()
-        .sendTransaction({
-          from: this.userInfo.account,
-        });
-
-      const hash = await tx;
+      let hash = await this
+        .contract
+        .claimAllInterest(this.userInfo.account);
       this.txHash = hash;
       hashModal.show();
 
-      const receipt = await tx.executed();
-      hashModal.hide();
-
-      if (receipt.outcomeStatus === 0) {
-        this.loadUserInfo();
-        // alert('Claim success');
-      } else {
-        alert('Claim failed');
-      }
+      this.contract.waitTx(hash).then(receipt => {
+        hashModal.hide();
+        if (receipt.status === 0) {
+          this.loadUserInfo();
+        } else {
+          alert('Claim failed');
+        }
+      });
     }, 
 
     async unstake() {
@@ -392,27 +446,23 @@ const PoSPool = {
       }
       const unstakeVotePower = this.unstakeCount / ONE_VOTE_CFX;
 
-      let tx = this.poolContract
-      .decreaseStake(unstakeVotePower)
-      .sendTransaction({
-        from: this.userInfo.account,
-      });
+      let hash = await this
+        .contract
+        .decreaseStake(unstakeVotePower, this.userInfo.account);
 
-      const hash = await tx;
       this.txHash = hash;
       hashModal.show();
 
-      let receipt = await tx.executed();
-      hashModal.hide();
-
-      if (receipt.outcomeStatus === 0) {
-        this.loadUserInfo();
-        this.loadUnlockingList();
-        this.unstakeCount = 0;  // clear unstake count
-        // alert('UnStake success');
-      } else {
-        alert('UnStake failed');
-      }
+      this.contract.waitTx(hash).then(receipt => {
+        hashModal.hide();
+        if (receipt.status === 0) {
+          this.loadUserInfo();
+          this.loadUserUnlockingList();
+          this.unstakeCount = 0;  // clear unstake count
+        } else {
+          alert('UnStake failed');
+        }
+      });
     },
 
     async withdraw() {
@@ -421,40 +471,34 @@ const PoSPool = {
         return;
       }
 
-      try{
-        let tx = this.poolContract
-        .withdrawStake(this.userInfo.unlocked.toString())
-        .sendTransaction({
-          from: this.userInfo.account,
-        });
+      try {
+        let hash = await this
+          .contract
+          .withdrawStake(this.userInfo.unlocked, this.userInfo.account);
 
-        const hash = await tx;
         this.txHash = hash;
         hashModal.show();
 
-        const receipt = await tx.executed();
-        hashModal.hide();
-        
-        if (receipt.outcomeStatus === 0) {
-          this.loadUserInfo();
-          // alert('Withdraw success');
-        } else {
-          alert('Withdraw failed');
-        }
+        this.contract.waitTx(hash).then(receipt => {
+          hashModal.hide();
+          if (receipt.status === 0) {
+            this.loadUserInfo();
+          } else {
+            alert('Withdraw failed');
+          }
+        });
       } catch(err) {
         console.log("The unlock time is estimated by PoW block number is not very accurate. Your votes is still unlocking, please try again several hours later", err);
         withdrawModal.show();
       }
     },
 
-    loadRewardData() {
-      const posAddress = '0xd8a68700530423e992d571e82467e67b3bce5940cd9cfa14f6615b8a11a3dba2';
-      const url = `https://confluxscan.io/stat/list-pos-account-reward?identifier=${posAddress}&limit=20&orderBy=createdAt&reverse=true`;
+    loadRewardChartData() {
+      let posAddress = this.poolInfo.posAddress;
+      const url = `${CURRENT.scanURL}/stat/list-pos-account-reward?identifier=${posAddress}&limit=20&orderBy=createdAt&reverse=true`;
       fetch(url)
         .then(response => response.json())
-        .then(data => {
-          initLineChart(data);
-        });
+        .then(initLineChart);
     }
   }
 };
@@ -463,6 +507,7 @@ Vue.createApp(PoSPool).mount('#app');
 
 function initLineChart(rewards) {
   const { list } = rewards;
+  if (list.length === 0) return;
   const labels = list.map(item => formatTime(new Date(item.createdAt)));
   const items = list.map(item => {
     const formated = formatUnit(item.reward, 'CFX');
@@ -489,20 +534,5 @@ function initLineChart(rewards) {
   document.getElementById('rewardChartContainer').removeAttribute('style');
   const chartEle = document.getElementById('rewardChart')
   const rewardChart = new Chart(chartEle, config);
+  return rewardChart;
 }
-
-/* function updateHash(hash) {
-  const hashLink = document.getElementById('hashLink');
-  hashLink.href = `${scanUrl}/tx/${hash}`;
-  hashLink.innerText = hash.slice(0, 10) + '...';
-
-  const modalEle = document.getElementById('hashModal');
-  var hashModal = new bootstrap.Modal(modalEle, {});
-  // 
-
-  modalEle.addEventListener('hidden.bs.modal', function() {
-    hashModal.dispose();
-  });
-
-  return hashModal;
-} */
