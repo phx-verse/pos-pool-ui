@@ -4,7 +4,7 @@ const MAINNET = {
   poolAddress: 'cfx:acdj1y1r00mzvuw9s831rj1t5amst2405jv582syu0',
   scanURL: 'https://confluxscan.io',
   nftAddress: 'cfx:acaemjexx8xx33n9s9jndmyz2871e90x4jw3zfyphy',
-  eSpaceAddress: '',
+  eSpaceAddress: '0x3cbc6F7D406fe9701573FE6DdF28f4F17b5d46A3',
   eSpaceRpc: 'https://evm.confluxrpc.com',
   eNetId: 1030,
 };
