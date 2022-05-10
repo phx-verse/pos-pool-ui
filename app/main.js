@@ -350,7 +350,7 @@ const PoSPool = {
       const poolSummary = await this.contract.poolSummary();
       this.poolInfo.totalLocked = poolSummary.available * BigInt(ONE_VOTE_CFX) * BigInt("1000000000000000000");
       this.poolInfo.totalRevenue = poolSummary.totalInterest;
-      this.poolInfo.apy = await this.contract.poolAPY() / 100n;
+      this.poolInfo.apy = Number(await this.contract.poolAPY()) / 100;
 
       const stakerNumber = await this.contract.stakerNumber();
       this.poolInfo.stakerNumber = stakerNumber.toString();
@@ -474,7 +474,7 @@ const PoSPool = {
       try {
         let hash = await this
           .contract
-          .withdrawStake(this.userInfo.unlocked.toString(), this.userInfo.account);
+          .withdrawStake(Number(this.userInfo.unlocked), this.userInfo.account);
 
         this.txHash = hash;
         hashModal.show();
