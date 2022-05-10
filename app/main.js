@@ -474,7 +474,7 @@ const PoSPool = {
       try {
         let hash = await this
           .contract
-          .withdrawStake(this.userInfo.unlocked, this.userInfo.account);
+          .withdrawStake(this.userInfo.unlocked.toString(), this.userInfo.account);
 
         this.txHash = hash;
         hashModal.show();
