@@ -177,7 +177,14 @@
             <div><span class="h-num">{{withdrawableCFX}}</span></div>
             <span class="intro-title">Withdrawable CFX</span>
           </div>
-          <button class="btn btn-primary mt-2" v-on:click="withdraw" :disabled="!userInfo.connected">Withdraw</button>
+          <div class="row mt-2">
+            <div class="col-md-7 col-12 mb-2">
+              <input class="form-control" type="number" v-model="withdrawCount">
+            </div>
+            <div class="col-md-5 col-12">
+              <button class="btn btn-primary" v-on:click="withdraw" :disabled="!userInfo.connected">Withdraw</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -216,7 +223,7 @@
             <div class="modal-body text-center">
               <i class="bi-hourglass-split" style="font-size: 40px; color: cornflowerblue;"></i>
               <br/>
-              <span>The unlock time is estimated by PoW block number is not very accurate. Your votes is still unlocking, please try again several hours later</span>
+              <span>Please try to withdraw small count or wait for a few hours and try again</span>
               <div style="height: 50px"></div>
             </div>
           </div>

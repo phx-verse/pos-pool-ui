@@ -67,6 +67,7 @@ const PoSPool = {
       },
       stakeCount: 0,  // stake input value
       unstakeCount: 0, // unstake input value
+      withdrawCount: 0,
       txhash: '',
       eSpaceBlockNumber: 0,
       eSpaceAccount: '',
@@ -471,10 +472,17 @@ const PoSPool = {
         return;
       }
 
+      if (this.withdrawCount === 0 || this.withdrawCount % ONE_VOTE_CFX != 0 ) {
+        alert('Unstake count should be multiple of 1000');
+        return;
+      }
+
+      const withdrawVotePower = this.withdrawCount / ONE_VOTE_CFX;
+
       try {
         let hash = await this
           .contract
-          .withdrawStake(Number(this.userInfo.unlocked), this.userInfo.account);
+          .withdrawStake(withdrawVotePower, this.userInfo.account);
 
         this.txHash = hash;
         hashModal.show();
@@ -488,7 +496,7 @@ const PoSPool = {
           }
         });
       } catch(err) {
-        console.log("The unlock time is estimated by PoW block number is not very accurate. Your votes is still unlocking, please try again several hours later", err);
+        console.log("Please try to withdraw small count or wait for a few hours and try again", err);
         withdrawModal.show();
       }
     },
