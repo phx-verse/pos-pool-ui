@@ -513,7 +513,8 @@ const PoSPool = {
 
 Vue.createApp(PoSPool).mount('#app');
 
-function initLineChart(rewards) {
+function initLineChart(res) {
+  const rewards = res.data;
   const { list } = rewards;
   if (list.length === 0) return;
   const labels = list.map(item => formatTime(new Date(item.createdAt)));
