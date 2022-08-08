@@ -142,7 +142,7 @@
               <input class="form-control" type="number" v-model="stakeCount">
             </div>
             <div class="col-md-5 col-12">
-              <button class="btn btn-primary" v-on:click="stake" :disabled="!userInfo.connected">Stake</button>
+              <button class="btn btn-primary" v-on:click="stake" :disabled="true">Stake</button>
             </div>
           </div>
           <p class="intro-title mt-1" v-if="userInfo.connected">Balance: {{userInfo.balance}} CFX</p>
