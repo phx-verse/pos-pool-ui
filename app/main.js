@@ -392,10 +392,6 @@ const PoSPool = {
         alert('Stake count should be multiple of 1000');
         return;
       }
-      if (this.stakeCount < 2000) {
-        alert('The minimum stake count is 2000 CFX');
-        return;
-      }
       if (Number(this.userInfo.balance) < Number(this.stakeCount)) {
         alert('Insufficient balance');
         return;
