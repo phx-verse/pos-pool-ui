@@ -57,8 +57,12 @@
       </div>
 
       <div class="alert alert-primary" role="alert">
-        <a href="https://developer.confluxnetwork.org/v2.1-hardfork/hardfork_v2.1.0_overview">Conflux hardfork v2.1</a> has been activated on 2022-10-25 12:00:00 UTC. The lock period has been changed to 1 day, unlock peroid change to 13 day.
+        <a href="https://forum.conflux.fun/t/conflux-v2-2-0-network-hardfork-upgrade-announcement-20221104/16924">Conflux hardfork v2.2</a> has been activated on 2022-11-17 08:00:00 UTC. The lock period has been changed to 13 day, unlock peroid change to 1 day.
         And the minimum stake amount has been changed back to 1000 CFX.
+      </div>
+
+      <div class="alert alert-primary" role="alert">
+        The PHX PoS Pool will proceed a upgrade according the newest Conflux hardfork v2.2. During the upgrade, main operations will be closed, the interest calculation will keep normal. The whole process may take serveral days.
       </div>
 
       <div class="row mt-3 border b-shadow rounded-3 p-4">
@@ -147,7 +151,7 @@
               <input class="form-control" type="number" v-model="stakeCount">
             </div>
             <div class="col-md-5 col-12">
-              <button class="btn btn-primary" v-on:click="stake" :disabled="!userInfo.connected">Stake</button>
+              <button class="btn btn-primary" v-on:click="stake" :disabled="!userInfo.connected || true">Stake</button>
             </div>
           </div>
           <p class="intro-title mt-1" v-if="userInfo.connected">Balance: {{userInfo.balance}} CFX</p>
@@ -172,7 +176,7 @@
               <input class="form-control" type="number" v-model="unstakeCount">
             </div>
             <div class="col-md-5 col-12">
-              <button class="btn btn-primary" v-on:click="unstake" :disabled="!userInfo.connected">Unstake</button>
+              <button class="btn btn-primary" v-on:click="unstake" :disabled="!userInfo.connected || true">Unstake</button>
             </div>
           </div>
         </div>
@@ -300,7 +304,7 @@
           <h5>Stake Rules:</h5>
           <ul>
             <li>The Stake/Unstake CFX amount must be multiple of 1000</li>
-            <li>From Conflux hardfork v2.1 (2022.10.26), the lock period of Stake is 1 day, Unstake is 13 day</li>
+            <li>From Conflux hardfork v2.2 (2022.11.17), the lock period of Stake is 13 day, Unstake is 1 day</li>
             <!-- <li>The pool performance fee is {{perFee}}% of PoS reward</li> -->
             <li>The reward will updated every hour</li>
             <li>The reward can be claimed any time</li>
