@@ -62,7 +62,7 @@
       </div>
 
       <div class="alert alert-primary" role="alert">
-        The PHX PoS Pool will proceed a upgrade according the newest Conflux hardfork v2.2. During the upgrade, main operations will be closed, the interest calculation will keep normal. The whole process may take serveral days.
+        The PHX PoS Pool has finished the pos_key replacement upgrade. All votes has been migrated to the new PoS node, and they all need another 13 days to become unlockable. But the reward is start to be distributed now.
       </div>
 
       <div class="row mt-3 border b-shadow rounded-3 p-4">
@@ -71,8 +71,7 @@
             <i class="bi-bank" style="font-size: 40px; color: cornflowerblue;"></i>
           </div>
           <div>
-            <!-- <div><span class="h-num" :title="formatedTotalLocked">{{prettyTotalLocked}}</span></div> -->
-            <div><span class="h-num" :title="formatedTotalLocked">15.07 M</span></div>
+            <div><span class="h-num" :title="formatedTotalLocked">{{prettyTotalLocked}}</span></div>
             <span class="intro-title">Staking Vault</span>
           </div>
         </div>
@@ -152,7 +151,7 @@
               <input class="form-control" type="number" v-model="stakeCount">
             </div>
             <div class="col-md-5 col-12">
-              <button class="btn btn-primary" v-on:click="stake" :disabled="!userInfo.connected || true">Stake</button>
+              <button class="btn btn-primary" v-on:click="stake" :disabled="!userInfo.connected">Stake</button>
             </div>
           </div>
           <p class="intro-title mt-1" v-if="userInfo.connected">Balance: {{userInfo.balance}} CFX</p>
@@ -177,7 +176,7 @@
               <input class="form-control" type="number" v-model="unstakeCount">
             </div>
             <div class="col-md-5 col-12">
-              <button class="btn btn-primary" v-on:click="unstake" :disabled="!userInfo.connected || true">Unstake</button>
+              <button class="btn btn-primary" v-on:click="unstake" :disabled="!userInfo.connected">Unstake</button>
             </div>
           </div>
         </div>
