@@ -57,12 +57,7 @@
       </div>
 
       <div class="alert alert-primary" role="alert">
-        <a href="https://forum.conflux.fun/t/conflux-v2-2-0-network-hardfork-upgrade-announcement-20221104/16924">Conflux hardfork v2.2</a> has been activated on 2022-11-17 08:00:00 UTC. The lock period has been changed to 13 day, unlock peroid change to 1 day.
-        And the minimum stake amount has been changed back to 1000 CFX.
-      </div>
-
-      <div class="alert alert-primary" role="alert">
-        In view of the current market, in order to maintain the continuous operation of the mining pool service, we will adjust the handling fee to 8% on January 15th after communicating with other mining pools
+        In view of the current market, in order to maintain the continuous operation of the mining pool service, we adjust the handling fee to 8% on January 15th after communicating with other mining pools
       </div>
 
       <div class="row mt-3 border b-shadow rounded-3 p-4">
@@ -305,20 +300,12 @@
           <ul>
             <li>The Stake/Unstake CFX amount must be multiple of 1000</li>
             <li>From Conflux hardfork v2.2 (2022.11.17), the lock period of Stake is 13 day, Unstake is 1 day</li>
-            <!-- <li>The pool performance fee is {{perFee}}% of PoS reward</li> -->
+            <li>The pool performance fee is {{perFee}}% of PoS reward</li>
             <li>The reward will updated every hour</li>
             <li>The reward can be claimed any time</li>
           </ul>
         </div>
         <div class="col-12 col-lg-6" v-if="space.value === 'Core'">
-          <h5>VIP Rules:</h5>
-          <ul>
-            <li>VIP0. Staked CFX 0-10k, performance fee 6% </li>
-            <li>VIP1. Staked CFX 10k-50k, performance fee 5% </li>
-            <li>VIP2. Staked CFX 50k-100k, performance fee 4% </li>
-            <li>VIP3. Staked CFX 100k-1000k, performance fee 3% </li>
-            <li>VIP4. Staked CFX > 1000k, performance fee 2% </li>
-          </ul>
         </div>
       </div>
 
