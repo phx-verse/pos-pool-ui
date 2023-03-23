@@ -312,7 +312,7 @@ const PoSPool = {
         unlockTime = new Date(now + unlockBlockNumber / 2 * 1000);
       } else {
         let unlockBlockNumber = Number(item.endBlock) - this.eSpaceBlockNumber;
-        unlockTime = new Date(now + unlockBlockNumber * 1000);
+        unlockTime = new Date(now + unlockBlockNumber * 1000 * 1.2);
       }
       return {
         amount: voteToCFX(item.votePower),
