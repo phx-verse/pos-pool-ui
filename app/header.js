@@ -12,10 +12,10 @@ const MAINNET = {
 const TESTNET = {
   url: 'https://test.confluxrpc.com',
   networkId: 1,
-  poolAddress: '0x820e8a21ba781389f5715c7a04dba9847cfccb64',
+  poolAddress: '0x8d205f5eaeefd422fb97d04db8755f99e45b5a4a',
   scanURL: 'https://testnet.confluxscan.io',
   nftAddress: 'cfxtest:achnjxz9rhvct9gsu87n54yept6zn9znt2mem6nmva',
-  eSpaceAddress: '0xf3Bdb4D5cC67A0b061B99872E68339B70EAf5d33',
+  eSpaceAddress: '0x90E66Bac7DB5c7E8311Cc245530A36E7fe5EBC03',
   eSpaceRpc: 'https://evmtestnet.confluxrpc.com',
   eNetId: 71,
 }
